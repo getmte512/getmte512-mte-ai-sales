@@ -1,22 +1,10 @@
-docs/DEVELOPMENT_PLAN.md
 # Development Plan
 
-## Milestone 1: Project setup
+The detailed product sequence and completion gates are maintained in
+`PROJECT_ROADMAP.md`.
 
-## Milestone 2: Authentication and database
-
-## Milestone 3: Retailer and buyer CRM
-
-## Milestone 4: CSV import
-
-## Milestone 5: Research and scoring
-
-## Milestone 6: Outreach approval queue
-
-## Milestone 7: Follow-ups and samples
-
-## Milestone 8: Sales reporting
-
-## Milestone 9: Pilot testing
-
-## Milestone 10: Production launch
+Milestone 1 delivers the retail contact importer and lightweight CRM. It also
+requires the account/contact data model to remain compatible with a future
+Shopify connection. Shopify synchronization and the customer-facing reorder
+portal are separate later milestones so the first usable sales tool can launch
+quickly and be tested safely.
