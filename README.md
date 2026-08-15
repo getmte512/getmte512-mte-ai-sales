@@ -1,55 +1,47 @@
 # MTE AI Sales Platform
 
-An AI-powered retail sales platform for MTE.
+Milestone 1 is a secure retail contact importer and searchable CRM for More Than Energy.
 
-## First Version
+## Current scope
 
-The first version will:
+- Authenticated MTE admin access
+- CSV file validation and preview
+- Automatic mapping for MTE and common contact headers
+- Contact cleaning and normalization
+- Missing-information warnings
+- Exact email duplicate detection within an upload
+- Email suppression handling for unsubscribes, complaints, hard bounces, and previous suppressions
+- Transactional import into Supabase PostgreSQL
+- Searchable contact CRM
 
-- Import retail contacts from CSV
-- Store retailers and buyers in a lightweight CRM
-- Research and score each prospect
-- Draft outreach for approval
-- Track follow-ups and samples
+Research, personas, scoring, AI generation, and outreach sending are intentionally not included in this milestone.
 
-## Technology
+## Platform roadmap
 
-- Next.js
-- TypeScript
-- Supabase
-- PostgreSQL
-- Private admin dashboard
-- Secure environment variables
+Future approval-gated milestones will add retailer research, buyer personas, prospect scoring, personalized outreach drafts, follow-up management, sample tracking, sales reporting, and daily strategy recommendations. No message will ever be sent automatically without Scott's approval.
 
-## Core Screens
+## Local setup
 
-- Dashboard
-- Retailers
-- Buyers
-- Prospect details
-- CSV import
-- Outreach approval queue
-- Follow-up queue
-- Sample tracker
-- Sales reports
+1. Install Node.js 20 or later and run `pnpm install`.
+2. Create a Supabase project.
+3. Run `supabase/migrations/001_contact_importer.sql` in the Supabase SQL editor.
+4. Create Scott's user in Supabase Authentication.
+5. Copy `.env.example` to `.env.local` and add the Supabase project URL, anonymous key, and server-only service-role key.
+6. Run `pnpm dev` and open `http://localhost:3000`.
 
-## AI Agents
+Never expose `SUPABASE_SERVICE_ROLE_KEY` in the browser or commit `.env.local`.
 
-1. Retail Research Agent
-2. Buyer Persona Agent
-3. Prospect Scoring Agent
-4. Outreach Agent
-5. Follow-Up Agent
-6. Sample Agent
-7. Sales Reporting Agent
-8. Sales Strategy Agent
+## Testing
 
-## Approval Workflow
+- Run automated tests with `pnpm test` after dependencies are installed.
+- Run the dependency-free MTE pilot check with:
 
-Drafted → Awaiting approval → Approved → Sent → Follow-up scheduled
+  `node --experimental-strip-types scripts/pilot-validation.mjs "C:\path\to\mte-contacts.csv"`
 
-No message will be sent automatically without approval.
+## Pilot procedure
 
-## Pilot Testing
+Use 10–20 MTE contacts first. Confirm the preview counts, warnings, duplicates, and suppressions before selecting **Import contacts**. Then search for several imported buyers in the Contact CRM.
 
-The first test will use 10–20 MTE retail contacts before importing the entire contact database.
+## Approval gate
+
+After Milestone 1 testing, development stops for Scott's approval. No research or outreach functionality should begin before approval.
