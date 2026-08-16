@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ImportPreview } from "@/lib/contact-import/types";
+import { createOutreachDraft } from "@/lib/outreach-draft";
 
 type CrmContact = {
   id: string;
@@ -13,9 +14,15 @@ type CrmContact = {
   store_banner_name: string | null;
   category: string | null;
   state: string | null;
+  linkedin_url: string | null;
+  website: string | null;
+  notes: string | null;
   completeness: string;
   email_health: string;
+  score: number; tier: "high" | "medium" | "low"; reasons: string[]; nextAction: string;
 };
+type SavedDraft = { id:string; contact_id:string; channel:"email"|"linkedin"; subject:string; body:string; status:"draft"|"awaiting_approval"|"approved"|"rejected"|"sent" };
+type PipelineRecord = { id:string; contact_id:string; stage:string; next_follow_up_on:string|null; notes:string|null; opening_order_value:number|null; ordered_on:string|null; reorder_follow_up_on:string|null };
 
 export function ContactImporter() {
   const [file, setFile] = useState<File | null>(null);
@@ -25,12 +32,68 @@ export function ContactImporter() {
   const [notice, setNotice] = useState("");
   const [contacts, setContacts] = useState<CrmContact[]>([]);
   const [search, setSearch] = useState("");
-  const [view, setView] = useState<"import" | "crm">("import");
+  const [emailFilter, setEmailFilter] = useState<"all" | "usable" | "risk">("all");
+  const [view, setView] = useState<"dashboard" | "import" | "crm" | "priorities" | "outreach" | "pipeline" | "reports">("dashboard");
+  const [researchContact, setResearchContact] = useState<CrmContact | null>(null);
+  const [skippedResearchIds, setSkippedResearchIds] = useState<string[]>([]);
+  const [selectedContact, setSelectedContact] = useState<CrmContact | null>(null);
+  const [priorityFilter, setPriorityFilter] = useState<"all" | "ready" | "research" | "reviewed" | "risk">("all");
+  const [draftContact, setDraftContact] = useState<CrmContact | null>(null);
+  const [draftChannel, setDraftChannel] = useState<"email"|"linkedin">("email");
+  const [drafts, setDrafts] = useState<SavedDraft[]>([]);
+  const [pipeline, setPipeline] = useState<PipelineRecord[]>([]);
+  const [pipelineFilter, setPipelineFilter] = useState<"all" | "prospects" | "contacted" | "due" | "samples" | "orders">("all");
 
   const importable = useMemo(
     () => preview?.contacts.filter((contact) => contact.status === "valid" || contact.status === "warning") ?? [],
     [preview],
   );
+  const priorityContacts = useMemo(() => contacts.filter((contact) => {
+    if (priorityFilter === "ready") return contact.nextAction === "Review for personalized outreach";
+    if (priorityFilter === "research") return contact.nextAction === "Research buyer and role" || contact.nextAction === "Find a verified business email";
+    if (priorityFilter === "reviewed") return contact.nextAction === "Verification required";
+    if (priorityFilter === "risk") return contact.email_health === "delivery_risk" || contact.email_health === "suppressed";
+    return true;
+  }).sort((a, b) => b.score - a.score), [contacts, priorityFilter]);
+  const visibleContacts = useMemo(() => contacts.filter((contact) => {
+    if (emailFilter === "usable") return contact.email_health !== "delivery_risk" && contact.email_health !== "suppressed";
+    if (emailFilter === "risk") return contact.email_health === "delivery_risk" || contact.email_health === "suppressed";
+    return true;
+  }), [contacts, emailFilter]);
+  const today = new Date().toISOString().slice(0,10);
+  const pipelineContacts = useMemo(() => contacts.filter((contact) => {
+    const item = pipeline.find((record) => record.contact_id === contact.id);
+    if (pipelineFilter === "prospects") return !item || item.stage === "prospect";
+    if (pipelineFilter === "contacted") return item?.stage === "contacted" || item?.stage === "follow_up_due";
+    if (pipelineFilter === "due") return Boolean(item?.next_follow_up_on && item.next_follow_up_on <= today && item.stage !== "ordered" && item.stage !== "not_interested");
+    if (pipelineFilter === "samples") return item?.stage === "sample_planned" || item?.stage === "sample_sent";
+    if (pipelineFilter === "orders") return item?.stage === "ordered";
+    return true;
+  }).sort((a,b)=>b.score-a.score), [contacts, pipeline, pipelineFilter, today]);
+  const dueFollowUps = pipeline.filter(item=>item.next_follow_up_on && item.next_follow_up_on<=today && item.stage!=="ordered" && item.stage!=="not_interested");
+  const reorderDue = pipeline.filter(item=>item.reorder_follow_up_on && item.reorder_follow_up_on<=today);
+  const openingOrderRevenue = pipeline.reduce((sum,item)=>sum+(item.opening_order_value??0),0);
+  const topStates=summarize(contacts.map(contact=>contact.state),5);
+  const topCategories=summarize(contacts.map(contact=>contact.category),5);
+  const funnel=[
+    {label:"Imported",count:contacts.length},
+    {label:"Researched",count:contacts.filter(c=>c.nextAction==="Review for personalized outreach").length},
+    {label:"Drafted",count:drafts.length},
+    {label:"Sent",count:drafts.filter(d=>d.status==="sent").length},
+    {label:"Samples",count:pipeline.filter(p=>p.stage==="sample_planned"||p.stage==="sample_sent").length},
+    {label:"Orders",count:pipeline.filter(p=>p.stage==="ordered").length}
+  ];
+  const nextMove=drafts.some(d=>d.status==="approved")
+    ? {view:"outreach" as const,title:"Send the approved outreach",detail:`${drafts.filter(d=>d.status==="approved").length} approved messages are ready to prepare.`}
+    : drafts.some(d=>d.status==="awaiting_approval")
+      ? {view:"outreach" as const,title:"Review the waiting outreach drafts",detail:`${drafts.filter(d=>d.status==="awaiting_approval").length} drafts are ready for your decision.`}
+      : dueFollowUps.length
+      ? {view:"pipeline" as const,title:"Complete today’s buyer follow-ups",detail:`${dueFollowUps.length} buyers need a response today.`}
+      : contacts.some(c=>c.nextAction==="Research buyer and role"||c.nextAction==="Find a verified business email")
+        ? {view:"priorities" as const,title:"Research the next priority buyers",detail:"Fill the strongest buyer gaps to unlock more outreach."}
+        : {view:"reports" as const,title:"Review pipeline performance",detail:"Your immediate queues are clear."};
+
+  useEffect(() => { void loadContacts(""); void loadDrafts(); void loadPipeline(); }, []);
 
   async function inspectFile() {
     if (!file) return;
@@ -66,17 +129,120 @@ export function ContactImporter() {
     setBusy(false);
   }
 
+  async function saveResearch(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!researchContact) return;
+    const continueToNext=(event.nativeEvent as SubmitEvent).submitter?.getAttribute("name")==="save_next";
+    const nextContact=getNextResearchContact(researchContact.id);
+    setBusy(true); setError(""); setNotice("");
+    const form = new FormData(event.currentTarget);
+    const fields = ["buyer_name", "job_title", "email", "phone", "linkedin_url", "website", "category", "state", "notes"];
+    const body = Object.fromEntries(fields.map((field) => [field, String(form.get(field) ?? "")]));
+    const response = await fetch("/api/contacts", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: researchContact.id, ...body }) });
+    const result = await response.json();
+    if (!response.ok) setError(result.error ?? "Unable to save research.");
+    else { setNotice(continueToNext&&nextContact?"Buyer research saved. Loading the next profile.":"Buyer research saved and priority score refreshed."); setResearchContact(continueToNext?nextContact:null); await loadContacts(""); }
+    setBusy(false);
+  }
+
+  function getNextResearchContact(currentId:string,additionalSkipped:string[] = []) {
+    const excluded=new Set([...skippedResearchIds,...additionalSkipped]);
+    const queue=[...contacts].filter(c=>c.nextAction==="Research buyer and role"||c.nextAction==="Find a verified business email").sort((a,b)=>b.score-a.score);
+    const currentIndex=queue.findIndex(c=>c.id===currentId);
+    return currentIndex>=0?queue.slice(currentIndex+1).find(c=>!excluded.has(c.id))??null:queue.find(c=>!excluded.has(c.id))??null;
+  }
+
+  function skipResearchContact() {
+    if(!researchContact)return;
+    const next=getNextResearchContact(researchContact.id,[researchContact.id]);
+    const skippedCount=skippedResearchIds.includes(researchContact.id)?skippedResearchIds.length:skippedResearchIds.length+1;
+    setSkippedResearchIds(ids=>ids.includes(researchContact.id)?ids:[...ids,researchContact.id]);
+    setNotice(next?`${researchContact.company_name} skipped without changes. ${skippedCount} skipped this session.`:"Research run complete. No buyer data was changed by skips.");
+    setResearchContact(next);
+  }
+
+  async function loadDrafts() {
+    const response=await fetch("/api/drafts"); const result=await response.json();
+    if(response.ok)setDrafts(result.drafts); else if(response.status!==404)setError(result.error??"Unable to load drafts.");
+  }
+
+  async function saveDraft(event:React.FormEvent<HTMLFormElement>) {
+    event.preventDefault(); if(!draftContact)return; setBusy(true); setError("");
+    const form=new FormData(event.currentTarget);
+    const response=await fetch("/api/drafts",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({contact_id:draftContact.id,channel:draftChannel,subject:String(form.get("subject")??""),body:String(form.get("body")??""),status:"awaiting_approval"})});
+    const result=await response.json(); if(!response.ok)setError(result.error??"Unable to save draft."); else {setNotice("Draft saved and added to the approval queue.");setDraftContact(null);await loadDrafts();} setBusy(false);
+  }
+
+  async function updateDraftStatus(id:string,status:"approved"|"rejected"|"sent") {
+    if(status==="sent"&&!window.confirm("Confirm this outreach was actually sent. This will schedule a three-day follow-up."))return;
+    setBusy(true); setError("");
+    const response=await fetch("/api/drafts",{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({id,status})});
+    const result=await response.json();
+    if(!response.ok) setError(result.error??"Unable to update draft.");
+    else {
+      let followUpScheduled=true;
+      if(status==="sent") try { await scheduleFollowUpForSentDraft(id); } catch(error) { followUpScheduled=false; setError(error instanceof Error?error.message:"Unable to schedule the follow-up."); }
+      setNotice(status==="approved"?"Draft approved and ready to copy.":status==="sent"&&followUpScheduled?"Outreach marked sent and a three-day follow-up was scheduled.":status==="sent"?"Outreach marked sent; the follow-up still needs to be scheduled.":"Draft returned for revision.");
+      await loadDrafts();
+    }
+    setBusy(false);
+  }
+
+  async function scheduleFollowUpForSentDraft(draftId:string) {
+    const draft=drafts.find(item=>item.id===draftId); if(!draft)return;
+    const saved=pipeline.find(item=>item.contact_id===draft.contact_id);
+    const protectedStages=["sample_planned","sample_sent","follow_up_due","ordered","not_interested"];
+    const followUp=new Date(); followUp.setDate(followUp.getDate()+3);
+    const response=await fetch("/api/pipeline",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({
+      contact_id:draft.contact_id,
+      stage:saved&&protectedStages.includes(saved.stage)?saved.stage:"contacted",
+      next_follow_up_on:saved?.next_follow_up_on??followUp.toISOString().slice(0,10),
+      notes:saved?.notes??"Initial outreach sent; follow up in three days.",
+      opening_order_value:saved?.opening_order_value??"",
+      ordered_on:saved?.ordered_on??"",
+      reorder_follow_up_on:saved?.reorder_follow_up_on??""
+    })});
+    if(!response.ok){const result=await response.json();throw new Error(result.error??"Unable to schedule the follow-up.");}
+    await loadPipeline();
+  }
+
+  async function copyDraft(draft:SavedDraft) {
+    try { await navigator.clipboard.writeText(`Subject: ${draft.subject}\n\n${draft.body}`); setNotice("Approved outreach copied to the clipboard."); }
+    catch { setError("Clipboard access was unavailable. Open Edit draft to copy the text manually."); }
+  }
+
+  function openDraftEmail(draft:SavedDraft,contact:CrmContact) {
+    if(draft.channel!=="email"){setError("This draft is not an email draft.");return;}
+    if(!contact.email){setError("Add a verified recipient email before preparing this message.");return;}
+    const params=new URLSearchParams({subject:draft.subject,body:draft.body});
+    window.location.href=`mailto:${encodeURIComponent(contact.email)}?${params.toString()}`;
+    setNotice(`Email prepared for ${contact.email}. Return here and choose Mark sent only after sending it.`);
+  }
+
+  async function loadPipeline(){const response=await fetch("/api/pipeline");const result=await response.json();if(response.ok)setPipeline(result.pipeline);else if(response.status!==404)setError(result.error??"Unable to load follow-ups.")}
+
+  async function savePipeline(event:React.FormEvent<HTMLFormElement>,contact:CrmContact){event.preventDefault();setBusy(true);setError("");const form=new FormData(event.currentTarget);const response=await fetch("/api/pipeline",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({contact_id:contact.id,stage:String(form.get("stage")??"prospect"),next_follow_up_on:String(form.get("next_follow_up_on")??""),notes:String(form.get("notes")??""),opening_order_value:String(form.get("opening_order_value")??""),ordered_on:String(form.get("ordered_on")??""),reorder_follow_up_on:String(form.get("reorder_follow_up_on")??"")})});const result=await response.json();if(!response.ok)setError(result.error??"Unable to save follow-up.");else{setNotice(`${contact.company_name} pipeline updated.`);await loadPipeline()}setBusy(false)}
+
+  function exportPipeline(){const quote=(value:unknown)=>`"${String(value??"").replaceAll('"','""')}"`;const header=["Buyer","Company","Stage","Next follow-up","Order value","Ordered on","Reorder follow-up","Notes"];const rows=contacts.map(contact=>{const item=pipeline.find(p=>p.contact_id===contact.id);return [contact.buyer_name,contact.company_name,item?.stage??"prospect",item?.next_follow_up_on,item?.opening_order_value,item?.ordered_on,item?.reorder_follow_up_on,item?.notes]});const csv=[header,...rows].map(row=>row.map(quote).join(",")).join("\r\n");const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));const link=document.createElement("a");link.href=url;link.download=`mte-sales-pipeline-${today}.csv`;link.click();URL.revokeObjectURL(url)}
+
   return (
     <section className="workspace">
       <nav className="tabs" aria-label="Milestone sections">
+        <button className={view === "dashboard" ? "active" : ""} onClick={() => { setView("dashboard"); void loadContacts(); void loadDrafts(); void loadPipeline(); }}>Today</button>
         <button className={view === "import" ? "active" : ""} onClick={() => setView("import")}>CSV Import</button>
         <button className={view === "crm" ? "active" : ""} onClick={() => { setView("crm"); void loadContacts(); }}>Contact CRM</button>
+        <button className={view === "priorities" ? "active" : ""} onClick={() => { setView("priorities"); void loadContacts(); }}>Priority Buyers</button>
+        <button className={view === "outreach" ? "active" : ""} onClick={() => { setView("outreach"); void loadContacts(); }}>Outreach Drafts</button>
+        <button className={view === "pipeline" ? "active" : ""} onClick={() => { setView("pipeline"); void loadPipeline(); }}>Samples & Follow-ups</button>
+        <button className={view === "reports" ? "active" : ""} onClick={() => { setView("reports"); void loadPipeline(); }}>Reports</button>
       </nav>
 
       {error && <div className="alert error">{error}</div>}
       {notice && <div className="alert success">{notice}</div>}
 
-      {view === "import" ? (
+      {view === "dashboard" ? (
+        <><div className="dashboard-grid"><button onClick={()=>setView("outreach")}><strong>{drafts.filter(d=>d.status==="approved").length}</strong><span>Approved drafts ready</span></button><button onClick={()=>setView("outreach")}><strong>{drafts.filter(d=>d.status==="awaiting_approval").length}</strong><span>Drafts awaiting approval</span></button><button onClick={()=>setView("pipeline")}><strong>{dueFollowUps.length}</strong><span>Follow-ups due</span></button><button onClick={()=>setView("pipeline")}><strong>{pipeline.filter(p=>p.stage==="sample_planned"||p.stage==="sample_sent").length}</strong><span>Samples in progress</span></button><button onClick={()=>setView("pipeline")}><strong>{pipeline.filter(p=>p.stage==="ordered").length}</strong><span>Opening orders</span></button></div><div className="dashboard-columns"><div className="panel"><span className="section-label">DO NEXT</span><h2>Today’s action list</h2><div className="action-list">{drafts.filter(d=>d.status==="approved").map(d=>{const c=contacts.find(contact=>contact.id===d.contact_id);return <button key={d.id} onClick={()=>setView("outreach")}><span className="action-dot"></span><div><strong>Send approved outreach</strong><p>{c?.buyer_name} · {c?.company_name}</p></div></button>})}{drafts.filter(d=>d.status==="awaiting_approval").map(d=>{const c=contacts.find(contact=>contact.id===d.contact_id);return <button key={d.id} onClick={()=>setView("outreach")}><span className="action-dot approval"></span><div><strong>Review outreach draft</strong><p>{c?.buyer_name} · {c?.company_name}</p></div></button>})}{dueFollowUps.map(p=>{const c=contacts.find(contact=>contact.id===p.contact_id);return <button key={p.id} onClick={()=>setView("pipeline")}><span className="action-dot followup"></span><div><strong>Complete follow-up</strong><p>{c?.buyer_name} · {c?.company_name}</p></div></button>})}{!drafts.some(d=>d.status==="approved"||d.status==="awaiting_approval")&&!dueFollowUps.length&&<div className="empty">No urgent outreach or follow-ups.</div>}</div></div><div className="panel"><span className="section-label">RESEARCH NEXT</span><h2>Highest-priority gaps</h2><div className="mini-list">{[...contacts].filter(c=>c.nextAction==="Research buyer and role"||c.nextAction==="Find a verified business email").sort((a,b)=>b.score-a.score).slice(0,5).map(c=><button key={c.id} onClick={()=>{setView("priorities");setResearchContact(c)}}><span className={`score-ring ${c.tier}`}>{c.score}</span><div><strong>{c.buyer_name||"Buyer needed"}</strong><p>{c.company_name}</p></div></button>)}</div></div></div></>
+      ) : view === "import" ? (
         <>
           <div className="panel upload-panel">
             <div>
@@ -124,30 +290,64 @@ export function ContactImporter() {
             </>
           )}
         </>
-      ) : (
+      ) : view === "crm" ? (
         <div className="panel">
           <div className="panel-heading">
             <div><span className="section-label">CONTACT CRM</span><h2>Imported retail buyers</h2></div>
             <form className="search" onSubmit={(event) => { event.preventDefault(); void loadContacts(); }}>
               <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search buyer, company, email, category…" />
+              <select aria-label="Email status" value={emailFilter} onChange={(event) => setEmailFilter(event.target.value as "all" | "usable" | "risk")}><option value="all">All email statuses</option><option value="usable">Usable email</option><option value="risk">Email risk</option></select>
               <button className="secondary" disabled={busy}>Search</button>
+              {(search || emailFilter !== "all") && <button type="button" className="secondary" onClick={() => { setSearch(""); setEmailFilter("all"); void loadContacts(""); }}>Clear</button>}
             </form>
           </div>
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Buyer</th><th>Company</th><th>Email</th><th>Title</th><th>Category</th><th>Completeness</th><th>Email health</th></tr></thead>
-              <tbody>{contacts.map((contact) => (
-                <tr key={contact.id}><td>{contact.buyer_name || "Unnamed contact"}</td><td>{contact.company_name}{contact.store_banner_name ? ` / ${contact.store_banner_name}` : ""}</td><td>{contact.email || "—"}</td><td>{contact.job_title || "—"}</td><td>{contact.category || "—"}</td><td><span className="badge neutral">{contact.completeness.replaceAll("_", " ")}</span></td><td><span className={`badge ${contact.email_health === "suppressed" ? "suppressed" : "neutral"}`}>{contact.email_health}</span></td></tr>
+              <thead><tr><th>Buyer</th><th>Company</th><th>Email</th><th>Phone</th><th>Title</th><th>Category</th><th>State</th><th>Completeness</th><th>Email health</th><th></th></tr></thead>
+               <tbody>{visibleContacts.map((contact) => (
+                <tr key={contact.id}><td>{contact.buyer_name || "Unnamed contact"}</td><td>{contact.company_name}{contact.store_banner_name ? ` / ${contact.store_banner_name}` : ""}</td><td>{contact.email || "—"}</td><td>{contact.phone || "—"}</td><td>{contact.job_title || "—"}</td><td>{contact.category || "—"}</td><td>{contact.state || "—"}</td><td><span className="badge neutral">{contact.completeness.replaceAll("_", " ")}</span></td><td><span className={`badge ${contact.email_health === "suppressed" ? "suppressed" : "neutral"}`}>{contact.email_health}</span></td><td><button className="secondary compact" onClick={()=>setSelectedContact(contact)}>Open</button></td></tr>
               ))}</tbody>
             </table>
           </div>
-          {!contacts.length && <div className="empty">No contacts loaded. Import a CSV or run a search.</div>}
+          {!visibleContacts.length && <div className="empty">No contacts match these filters.</div>}
         </div>
+      ) : view === "priorities" ? (
+        <div className="panel"><div className="panel-heading"><div><span className="section-label">MILESTONE 2</span><h2>Buyer priorities</h2><p>Start with the strongest, most reachable retail opportunities.</p></div><button className="secondary" disabled={busy} onClick={() => void loadContacts("")}>Refresh scores</button></div>
+          <div className="research-summary"><button className={priorityFilter==="all"?"active":""} onClick={()=>setPriorityFilter("all")}><strong>{contacts.length}</strong><span>All buyers</span></button><button className={priorityFilter==="ready"?"active":""} onClick={()=>setPriorityFilter("ready")}><strong>{contacts.filter(c=>c.nextAction==="Review for personalized outreach").length}</strong><span>Outreach ready</span></button><button className={priorityFilter==="research"?"active":""} onClick={()=>setPriorityFilter("research")}><strong>{contacts.filter(c=>c.nextAction==="Research buyer and role"||c.nextAction==="Find a verified business email").length}</strong><span>Needs research</span></button><button className={priorityFilter==="reviewed"?"active":""} onClick={()=>setPriorityFilter("reviewed")}><strong>{contacts.filter(c=>c.nextAction==="Verification required").length}</strong><span>Reviewed gaps</span></button><button className={priorityFilter==="risk"?"active":""} onClick={()=>setPriorityFilter("risk")}><strong>{contacts.filter(c=>c.email_health==="delivery_risk"||c.email_health==="suppressed").length}</strong><span>Email risk</span></button></div>
+          <div className="queue-heading"><strong>{priorityContacts.length} buyers in this queue</strong><span>Ranked highest score first</span></div>
+          <div className="priority-grid">{priorityContacts.map((contact,index)=><article className="priority-card" key={contact.id}><div className="priority-rank">#{index+1}</div><div className={`score-ring ${contact.tier}`}>{contact.score}</div><div className="priority-copy"><h3>{contact.buyer_name||"Buyer research needed"}</h3><strong>{contact.company_name}{contact.store_banner_name?` / ${contact.store_banner_name}`:""}</strong><p>{contact.job_title||"Role not identified"} · {contact.category||"Category unknown"}</p><div className="reason-list">{contact.reasons.map(reason=><span key={reason}>{reason}</span>)}</div></div><div className="next-action"><small>NEXT ACTION</small><strong>{contact.nextAction}</strong><button className="secondary compact" onClick={()=>setResearchContact(contact)}>Edit research</button></div></article>)}</div>
+          {!contacts.length&&<div className="empty">Loading buyer priorities…</div>}
+        </div>
+      ) : view === "outreach" ? (
+        <div className="panel"><div className="panel-heading"><div><span className="section-label">DRAFT WORKSPACE</span><h2>Outreach-ready buyers</h2><p>Create personalized drafts for review. Nothing is sent automatically.</p></div><span className="safe-pill">Approval required before sending</span></div><div className="draft-list">{contacts.filter(c=>c.nextAction==="Review for personalized outreach").sort((a,b)=>b.score-a.score).map(contact=>{const saved=drafts.find(d=>d.contact_id===contact.id);return <article key={contact.id} className="draft-row"><div className={`score-ring ${contact.tier}`}>{contact.score}</div><div><h3>{contact.buyer_name}</h3><strong>{contact.company_name}</strong><p>{contact.job_title} · {contact.category}</p><small>{contact.email||"Recipient email needed"}</small>{saved&&<span className={`badge ${saved.status==="approved"||saved.status==="sent"?"valid":saved.status==="rejected"?"invalid":"warning"}`}>{saved.status.replaceAll("_"," ")}</span>}</div><div className="draft-actions"><button className="secondary" onClick={()=>setDraftContact(contact)}>{saved?"Edit draft":"Create draft"}</button>{saved?.status==="awaiting_approval"&&<><button className="primary" disabled={busy} onClick={()=>void updateDraftStatus(saved.id,"approved")}>Approve</button><button className="secondary" disabled={busy} onClick={()=>void updateDraftStatus(saved.id,"rejected")}>Revise</button></>}{saved?.status==="approved"&&<><button className="primary" disabled={busy||!contact.email||saved.channel!=="email"} onClick={()=>openDraftEmail(saved,contact)}>Prepare email</button><button className="secondary" disabled={busy} onClick={()=>void copyDraft(saved)}>Copy draft</button><button className="secondary" disabled={busy} onClick={()=>void updateDraftStatus(saved.id,"sent")}>Mark sent</button></>}</div></article>})}</div>{!contacts.some(c=>c.nextAction==="Review for personalized outreach")&&<div className="empty">Finish buyer research to unlock outreach drafts.</div>}</div>
+      ) : view === "pipeline" ? (
+        <div className="panel"><div className="panel-heading"><div><span className="section-label">SALES PIPELINE</span><h2>Samples & follow-ups</h2><p>Track each buyer from first contact through samples and opening orders.</p></div><span className="safe-pill">{pipeline.filter(p=>p.next_follow_up_on).length} scheduled follow-ups</span></div><div className="research-summary pipeline-filters"><button className={pipelineFilter==="all"?"active":""} onClick={()=>setPipelineFilter("all")}><strong>{contacts.length}</strong><span>All buyers</span></button><button className={pipelineFilter==="prospects"?"active":""} onClick={()=>setPipelineFilter("prospects")}><strong>{contacts.filter(c=>{const p=pipeline.find(item=>item.contact_id===c.id);return !p||p.stage==="prospect"}).length}</strong><span>Prospects</span></button><button className={pipelineFilter==="contacted"?"active":""} onClick={()=>setPipelineFilter("contacted")}><strong>{pipeline.filter(p=>p.stage==="contacted"||p.stage==="follow_up_due").length}</strong><span>Contacted</span></button><button className={pipelineFilter==="due"?"active":""} onClick={()=>setPipelineFilter("due")}><strong>{dueFollowUps.length}</strong><span>Due now</span></button><button className={pipelineFilter==="samples"?"active":""} onClick={()=>setPipelineFilter("samples")}><strong>{pipeline.filter(p=>p.stage==="sample_planned"||p.stage==="sample_sent").length}</strong><span>Samples</span></button><button className={pipelineFilter==="orders"?"active":""} onClick={()=>setPipelineFilter("orders")}><strong>{pipeline.filter(p=>p.stage==="ordered").length}</strong><span>Orders</span></button></div><div className="queue-heading"><strong>{pipelineContacts.length} buyers shown</strong><span>Highest priority first</span></div><div className="pipeline-list">{pipelineContacts.map(contact=>{const saved=pipeline.find(p=>p.contact_id===contact.id);return <form className="pipeline-row" key={contact.id} onSubmit={event=>void savePipeline(event,contact)}><div><h3>{contact.buyer_name||"Buyer research needed"}</h3><strong>{contact.company_name}</strong>{saved?.next_follow_up_on&&saved.next_follow_up_on<=today&&saved.stage!=="ordered"&&saved.stage!=="not_interested"&&<span className="badge warning">Follow-up due</span>}</div><label>Stage<select name="stage" defaultValue={saved?.stage??"prospect"}><option value="prospect">Prospect</option><option value="contacted">Contacted</option><option value="sample_planned">Sample planned</option><option value="sample_sent">Sample sent</option><option value="follow_up_due">Follow-up due</option><option value="ordered">Opening order</option><option value="not_interested">Not interested</option></select></label><label>Next follow-up<input name="next_follow_up_on" type="date" defaultValue={saved?.next_follow_up_on??""}/></label><label className="pipeline-notes">Notes<input name="notes" defaultValue={saved?.notes??""} placeholder="Sample, call, or order details"/></label><div className="order-fields"><label>Order value<input name="opening_order_value" type="number" min="0" step="0.01" defaultValue={saved?.opening_order_value??""}/></label><label>Ordered on<input name="ordered_on" type="date" defaultValue={saved?.ordered_on??""}/></label><label>Reorder follow-up<input name="reorder_follow_up_on" type="date" defaultValue={saved?.reorder_follow_up_on??""}/></label></div><button className="secondary" disabled={busy}>Save</button></form>})}{!pipelineContacts.length&&<div className="empty">No buyers are in this pipeline queue.</div>}</div></div>
+      ) : (
+        <>
+          <div className="report-toolbar">
+            <div><span className="section-label">SALES REPORTING</span><h2>Pipeline performance</h2></div>
+            <button className="secondary" onClick={exportPipeline}>Download CSV</button>
+          </div>
+          <div className="dashboard-grid report-cards"><button><strong>{pipeline.filter(p=>p.stage==="ordered").length}</strong><span>Opening orders</span></button><button><strong>${openingOrderRevenue.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</strong><span>Opening-order revenue</span></button><button><strong>{pipeline.filter(p=>p.stage==="sample_sent").length}</strong><span>Samples sent</span></button><button><strong>{reorderDue.length}</strong><span>Reorders due</span></button></div>
+          <div className="panel funnel-panel"><span className="section-label">SALES FUNNEL</span><h2>Buyer progress</h2><div className="funnel-steps">{funnel.map((step,index)=><div key={step.label}><strong>{step.count}</strong><span>{step.label}</span><small>{index===0?"100% of list":`${contacts.length?Math.round(step.count/contacts.length*100):0}% of list`}</small></div>)}</div></div>
+          <button className="panel next-move" onClick={()=>setView(nextMove.view)}><div><span className="section-label">RECOMMENDED NEXT MOVE</span><h2>{nextMove.title}</h2><p>{nextMove.detail}</p></div><strong>Open queue →</strong></button>
+          <div className="dashboard-columns segment-reports"><div className="panel"><span className="section-label">TERRITORY MIX</span><h2>Top states</h2><div className="stage-report">{topStates.map(item=><button key={item.label} onClick={()=>{setSearch(item.label);setView("crm");void loadContacts(item.label)}}><span>{item.label}</span><strong>{item.count}</strong></button>)}{!topStates.length&&<div className="empty">Add state data to see territory performance.</div>}</div></div><div className="panel"><span className="section-label">CHANNEL MIX</span><h2>Top categories</h2><div className="stage-report">{topCategories.map(item=><button key={item.label} onClick={()=>{setSearch(item.label);setView("crm");void loadContacts(item.label)}}><span>{item.label}</span><strong>{item.count}</strong></button>)}{!topCategories.length&&<div className="empty">Complete buyer research to see category performance.</div>}</div></div></div>
+          <div className="dashboard-columns"><div className="panel"><span className="section-label">PIPELINE REPORT</span><h2>Stage summary</h2><div className="stage-report">{["prospect","contacted","sample_planned","sample_sent","follow_up_due","ordered","not_interested"].map(stage=><div key={stage}><span>{stage.replaceAll("_"," ")}</span><strong>{pipeline.filter(p=>p.stage===stage).length+(stage==="prospect"?contacts.filter(c=>!pipeline.some(p=>p.contact_id===c.id)).length:0)}</strong></div>)}</div></div><div className="panel"><span className="section-label">REORDER QUEUE</span><h2>Accounts to revisit</h2><div className="mini-list">{reorderDue.map(p=>{const c=contacts.find(contact=>contact.id===p.contact_id);return <button key={p.id} onClick={()=>setView("pipeline")}><div><strong>{c?.company_name}</strong><p>Reorder follow-up {p.reorder_follow_up_on}</p></div></button>})}{!reorderDue.length&&<div className="empty">No reorder follow-ups due.</div>}</div></div></div>
+        </>
       )}
+      {selectedContact && (()=>{const savedDrafts=drafts.filter(d=>d.contact_id===selectedContact.id);const savedPipeline=pipeline.find(p=>p.contact_id===selectedContact.id);return <div className="research-backdrop"><div className="panel research-panel contact-profile"><div className="panel-heading"><div><span className="section-label">COMPANY & CONTACT</span><h2>{selectedContact.company_name}</h2><p>{selectedContact.buyer_name||"Buyer name needed"}{selectedContact.job_title?` · ${selectedContact.job_title}`:""}</p></div><button className="secondary" onClick={()=>setSelectedContact(null)}>Close</button></div><div className="profile-grid"><div><small>EMAIL</small>{selectedContact.email?<a href={`mailto:${selectedContact.email}`}>{selectedContact.email}</a>:<span>Not added</span>}</div><div><small>PHONE</small>{selectedContact.phone?<a href={`tel:${selectedContact.phone}`}>{selectedContact.phone}</a>:<span>Not added</span>}</div><div><small>CATEGORY</small><span>{selectedContact.category||"Not added"}</span></div><div><small>TERRITORY</small><span>{selectedContact.state||"Not added"}</span></div><div><small>WEBSITE</small>{selectedContact.website?<a href={selectedContact.website} target="_blank" rel="noreferrer">Open website</a>:<span>Not added</span>}</div><div><small>LINKEDIN</small>{selectedContact.linkedin_url?<a href={selectedContact.linkedin_url} target="_blank" rel="noreferrer">Open LinkedIn</a>:<span>Not added</span>}</div><div><small>OUTREACH</small><span>{savedDrafts.length?savedDrafts.map(d=>`${d.channel}: ${d.status.replaceAll("_"," ")}`).join(" · "):"No drafts"}</span></div><div><small>PIPELINE</small><span>{savedPipeline?.stage.replaceAll("_"," ")??"Prospect"}</span></div></div>{selectedContact.notes&&<div className="profile-notes"><small>RESEARCH NOTES</small><p>{selectedContact.notes}</p></div>}<div className="draft-actions"><button className="primary" onClick={()=>{setSelectedContact(null);setResearchContact(selectedContact)}}>Edit contact</button><button className="secondary" onClick={()=>{setSelectedContact(null);setView("pipeline")}}>Open pipeline</button></div></div></div>})()}
+      {researchContact && <div className="research-backdrop"><form key={researchContact.id} className="panel research-panel" onSubmit={saveResearch}><div className="panel-heading"><div><span className="section-label">BUYER RESEARCH</span><h2>{researchContact.company_name}</h2></div><button type="button" className="secondary" onClick={() => setResearchContact(null)}>Close</button></div><div className="research-fields"><label>Buyer name<input name="buyer_name" defaultValue={researchContact.buyer_name ?? ""} /></label><label>Job title<input name="job_title" defaultValue={researchContact.job_title ?? ""} /></label><label>Email address<input name="email" type="email" defaultValue={researchContact.email ?? ""} /></label><label>Phone number<input name="phone" type="tel" defaultValue={researchContact.phone ?? ""} /></label><label>LinkedIn URL<input name="linkedin_url" type="url" defaultValue={researchContact.linkedin_url ?? ""} /></label><label>Company website<input name="website" type="url" defaultValue={researchContact.website ?? ""} /></label><label>Category<input name="category" defaultValue={researchContact.category ?? ""} /></label><label>State / territory<input name="state" defaultValue={researchContact.state ?? ""} placeholder="Example: Texas" /></label><label className="full">Research notes<textarea name="notes" rows={5} defaultValue={researchContact.notes ?? ""} /></label></div><div className="draft-actions"><button type="button" className="secondary" disabled={busy} onClick={skipResearchContact}>Skip for now</button><button className="primary" disabled={busy}>{busy ? "Saving…" : "Save research"}</button><button className="secondary" name="save_next" disabled={busy}>{busy ? "Saving…" : "Save & next"}</button></div></form></div>}
+      {draftContact && (()=>{const saved=drafts.find(d=>d.contact_id===draftContact.id&&d.channel===draftChannel);const generated=createOutreachDraft({buyerName:draftContact.buyer_name??"there",companyName:draftContact.company_name,category:draftContact.category,channel:draftChannel});const draft=saved??generated;return <div className="research-backdrop"><form key={`${draftContact.id}-${draftChannel}`} className="panel research-panel" onSubmit={saveDraft}><div className="panel-heading"><div><span className="section-label">OUTREACH DRAFT</span><h2>{draftContact.company_name}</h2></div><button type="button" className="secondary" onClick={()=>setDraftContact(null)}>Close</button></div><div className="research-fields"><label>Channel<select value={draftChannel} onChange={event=>setDraftChannel(event.target.value as "email"|"linkedin")}><option value="email">Email</option><option value="linkedin">LinkedIn</option></select></label><label className="full">Subject<input name="subject" defaultValue={draft.subject}/></label><label className="full">{draftChannel==="email"?"Email draft":"LinkedIn draft"}<textarea name="body" rows={draftChannel==="email"?12:6} defaultValue={draft.body}/></label></div><button className="primary" disabled={busy}>{busy?"Saving…":"Save for approval"}</button><p className="draft-warning">This workspace cannot send messages.</p></form></div>})()}
     </section>
   );
 }
 
 function Stat({ label, value }: { label: string; value: number }) {
   return <div className="stat"><strong>{value.toLocaleString()}</strong><span>{label}</span></div>;
+}
+
+function summarize(values:(string|null)[],limit:number) {
+  const counts=new Map<string,number>();
+  for(const value of values){const label=value?.trim();if(label)counts.set(label,(counts.get(label)??0)+1);}
+  return [...counts.entries()].map(([label,count])=>({label,count})).sort((a,b)=>b.count-a.count||a.label.localeCompare(b.label)).slice(0,limit);
 }

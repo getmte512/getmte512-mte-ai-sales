@@ -4,5 +4,8 @@ node_modules/
 .env.local
 coverage/
 *.log
+*.tsbuildinfo
 work/
 outputs/
+mte-contact-pilot-20.csv
+scripts/save-supabase-secret.ps1

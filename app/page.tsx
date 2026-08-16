@@ -13,7 +13,7 @@ export default async function Home() {
           <span className="eyebrow">MORE THAN ENERGY</span>
           <h1>Retail Contact CRM</h1>
         </div>
-        <div className="scope-pill">Milestone 1 · Import only</div>
+        <div className="scope-pill">Milestone 2 · Research &amp; prioritization</div>
       </header>
       <ContactImporter />
     </main>

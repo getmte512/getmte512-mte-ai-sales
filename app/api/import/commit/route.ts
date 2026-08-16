@@ -64,7 +64,13 @@ export async function POST(request: Request) {
     if (error) throw error;
     return NextResponse.json(data);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Import failed.";
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === "object" && error !== null && "message" in error && typeof error.message === "string"
+          ? error.message
+          : "Import failed.";
+    console.error("Contact import failed:", error);
     return NextResponse.json({ error: message === "UNAUTHORIZED" ? "Sign in is required." : message }, { status: message === "UNAUTHORIZED" ? 401 : 400 });
   }
 }
