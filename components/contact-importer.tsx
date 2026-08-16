@@ -28,6 +28,7 @@ export function ContactImporter() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [busy, setBusy] = useState(false);
+  const [loadingContacts, setLoadingContacts] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [contacts, setContacts] = useState<CrmContact[]>([]);
@@ -121,12 +122,12 @@ export function ContactImporter() {
   }
 
   async function loadContacts(query = search) {
-    setBusy(true); setError("");
+    setLoadingContacts(true); setError("");
     const response = await fetch(`/api/contacts?q=${encodeURIComponent(query)}`);
     const result = await response.json();
     if (!response.ok) setError(result.error ?? "Unable to load CRM contacts.");
     else setContacts(result.contacts);
-    setBusy(false);
+    setLoadingContacts(false);
   }
 
   async function saveResearch(event: React.FormEvent<HTMLFormElement>) {
@@ -254,7 +255,7 @@ export function ContactImporter() {
               <input type="file" accept=".csv,text/csv" onChange={(event) => { setFile(event.target.files?.[0] ?? null); setPreview(null); }} />
               <span>{file ? file.name : "Choose CSV file"}</span>
             </label>
-            <button className="primary" disabled={!file || busy} onClick={inspectFile}>{busy ? "Inspecting…" : "Inspect file"}</button>
+            <button className="primary" disabled={!file || busy} onClick={inspectFile}>{busy && file ? "Inspecting…" : "Inspect file"}</button>
           </div>
 
           {preview && (
@@ -297,7 +298,7 @@ export function ContactImporter() {
             <form className="search" onSubmit={(event) => { event.preventDefault(); void loadContacts(); }}>
               <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search buyer, company, email, category…" />
               <select aria-label="Email status" value={emailFilter} onChange={(event) => setEmailFilter(event.target.value as "all" | "usable" | "risk")}><option value="all">All email statuses</option><option value="usable">Usable email</option><option value="risk">Email risk</option></select>
-              <button className="secondary" disabled={busy}>Search</button>
+              <button className="secondary" disabled={loadingContacts}>{loadingContacts ? "Searching…" : "Search"}</button>
               {(search || emailFilter !== "all") && <button type="button" className="secondary" onClick={() => { setSearch(""); setEmailFilter("all"); void loadContacts(""); }}>Clear</button>}
             </form>
           </div>
@@ -312,7 +313,7 @@ export function ContactImporter() {
           {!visibleContacts.length && <div className="empty">No contacts match these filters.</div>}
         </div>
       ) : view === "priorities" ? (
-        <div className="panel"><div className="panel-heading"><div><span className="section-label">MILESTONE 2</span><h2>Buyer priorities</h2><p>Start with the strongest, most reachable retail opportunities.</p></div><button className="secondary" disabled={busy} onClick={() => void loadContacts("")}>Refresh scores</button></div>
+        <div className="panel"><div className="panel-heading"><div><span className="section-label">MILESTONE 2</span><h2>Buyer priorities</h2><p>Start with the strongest, most reachable retail opportunities.</p></div><button className="secondary" disabled={loadingContacts} onClick={() => void loadContacts("")}>{loadingContacts ? "Refreshing…" : "Refresh scores"}</button></div>
           <div className="research-summary"><button className={priorityFilter==="all"?"active":""} onClick={()=>setPriorityFilter("all")}><strong>{contacts.length}</strong><span>All buyers</span></button><button className={priorityFilter==="ready"?"active":""} onClick={()=>setPriorityFilter("ready")}><strong>{contacts.filter(c=>c.nextAction==="Review for personalized outreach").length}</strong><span>Outreach ready</span></button><button className={priorityFilter==="research"?"active":""} onClick={()=>setPriorityFilter("research")}><strong>{contacts.filter(c=>c.nextAction==="Research buyer and role"||c.nextAction==="Find a verified business email").length}</strong><span>Needs research</span></button><button className={priorityFilter==="reviewed"?"active":""} onClick={()=>setPriorityFilter("reviewed")}><strong>{contacts.filter(c=>c.nextAction==="Verification required").length}</strong><span>Reviewed gaps</span></button><button className={priorityFilter==="risk"?"active":""} onClick={()=>setPriorityFilter("risk")}><strong>{contacts.filter(c=>c.email_health==="delivery_risk"||c.email_health==="suppressed").length}</strong><span>Email risk</span></button></div>
           <div className="queue-heading"><strong>{priorityContacts.length} buyers in this queue</strong><span>Ranked highest score first</span></div>
           <div className="priority-grid">{priorityContacts.map((contact,index)=><article className="priority-card" key={contact.id}><div className="priority-rank">#{index+1}</div><div className={`score-ring ${contact.tier}`}>{contact.score}</div><div className="priority-copy"><h3>{contact.buyer_name||"Buyer research needed"}</h3><strong>{contact.company_name}{contact.store_banner_name?` / ${contact.store_banner_name}`:""}</strong><p>{contact.job_title||"Role not identified"} · {contact.category||"Category unknown"}</p><div className="reason-list">{contact.reasons.map(reason=><span key={reason}>{reason}</span>)}</div></div><div className="next-action"><small>NEXT ACTION</small><strong>{contact.nextAction}</strong><button className="secondary compact" onClick={()=>setResearchContact(contact)}>Edit research</button></div></article>)}</div>
