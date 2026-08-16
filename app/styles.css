@@ -58,5 +58,6 @@ tr:last-child td { border-bottom:0; }
 .login-card input { border:1px solid #b9c3bb; border-radius:10px; padding:12px; }
 .eyebrow.dark { color:var(--forest); }
 .dashboard-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.recent-activity{margin-top:20px}.activity-list{display:grid;margin-top:14px}.activity-list button{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:13px 4px;border:0;border-bottom:1px solid var(--line);background:transparent;text-align:left;cursor:pointer}.activity-list button:last-child{border-bottom:0}.activity-list p{margin:3px 0 0;font-size:13px}.activity-list time{color:var(--muted);font-size:12px;font-weight:750;white-space:nowrap}
 .pipeline-filters{grid-template-columns:repeat(auto-fit,minmax(125px,1fr))}
 @media(max-width:900px){ .upload-panel{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.panel-heading{align-items:flex-start;flex-direction:column}.search{width:100%}.topbar{align-items:flex-start;flex-direction:column}.scope-pill{display:none}.funnel-steps{grid-template-columns:repeat(2,1fr)} }
