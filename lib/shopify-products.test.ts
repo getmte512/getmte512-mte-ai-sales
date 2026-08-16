@@ -1,0 +1,2 @@
+import{describe,expect,it}from"vitest";import{summarizeShopifyProducts}from"./shopify-products";
+describe("Shopify product summary",()=>{it("reports active and low inventory",()=>{expect(summarizeShopifyProducts([{id:"1",title:"A",status:"ACTIVE",totalInventory:8,variantCount:1},{id:"2",title:"B",status:"ACTIVE",totalInventory:0,variantCount:2},{id:"3",title:"C",status:"DRAFT",totalInventory:20,variantCount:1}])).toMatchObject({total:3,active:2,lowStock:2,outOfStock:1,totalUnits:28});});it("handles no products",()=>expect(summarizeShopifyProducts([]).totalUnits).toBe(0));});

@@ -1,0 +1,2 @@
+export type ShopifyProductPreview={id:string;title:string;status:string;totalInventory:number;variantCount:number};
+export function summarizeShopifyProducts(products:ShopifyProductPreview[]){return {total:products.length,active:products.filter(p=>p.status==="ACTIVE").length,lowStock:products.filter(p=>p.status==="ACTIVE"&&p.totalInventory<=10).length,outOfStock:products.filter(p=>p.status==="ACTIVE"&&p.totalInventory<=0).length,totalUnits:products.reduce((sum,p)=>sum+p.totalInventory,0)};}
