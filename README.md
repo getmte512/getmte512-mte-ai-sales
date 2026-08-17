@@ -35,8 +35,11 @@ More Than Energy's private retail-sales workspace. It turns retailer contact dat
 
 ## Verification
 
+- `npm run preflight:local`
 - `npm test`
 - `npx tsc --noEmit`
 - `npm run build`
+
+See `DEPLOYMENT.md` before configuring or publishing a hosted environment.
 
 For a new contact list, begin with a small pilot and inspect the preview before importing. Never commit `.env.local`, contact CSV files, local secret-saving scripts, logs, or generated build artifacts.

@@ -8,7 +8,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "preflight:local": "node scripts/deployment-preflight.mjs",
+    "preflight:production": "node scripts/deployment-preflight.mjs --production"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
