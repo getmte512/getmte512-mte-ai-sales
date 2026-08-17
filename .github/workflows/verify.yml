@@ -3,7 +3,7 @@ name: Verify MTE CRM
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, recovery/codex-full-history]
 
 permissions:
   contents: read
