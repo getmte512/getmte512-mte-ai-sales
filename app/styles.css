@@ -9,6 +9,7 @@ main { min-height:100vh; }
 .topbar h1 { margin:4px 0 0; font-size:clamp(28px,4vw,48px); letter-spacing:-.04em; }
 .eyebrow,.section-label { font-size:12px; font-weight:800; letter-spacing:.15em; }
 .scope-pill { padding:9px 14px; border:1px solid rgba(255,255,255,.28); border-radius:999px; font-size:13px; }
+.account-controls{display:flex;align-items:center;gap:9px}.account-controls .scope-pill{text-transform:capitalize}.sign-out-button{padding:9px 14px;border:1px solid rgba(255,255,255,.45);border-radius:999px;background:transparent;color:white;font-weight:750}.sign-out-button:hover{background:rgba(255,255,255,.1)}.account-button{width:100%}
 .workspace { max-width:1400px; margin:0 auto; padding:24px; }
 .tabs { display:grid; gap:10px; margin-bottom:20px; padding:12px; border:1px solid var(--line); border-radius:15px; background:white; }
 .tab-section{display:grid;grid-template-columns:125px 1fr;align-items:start;gap:10px}.tab-section>strong{padding:10px 4px;color:var(--muted);font-size:11px;letter-spacing:.1em}.tab-section>div{display:flex;gap:6px;flex-wrap:wrap}
