@@ -14,6 +14,7 @@ More Than Energy's private retail-sales workspace. It turns retailer contact dat
 - Prospect, contacted, sample, follow-up, opening-order, and not-interested pipeline stages
 - Opening-order value, order date, and reorder follow-up tracking
 - Daily action dashboard, sales funnel, territory/category summaries, recommendations, and CSV pipeline export
+- Approval-gated Shopify synchronization, reconciliation decisions, exception monitoring, and snapshot verification
 
 ## Safety rules
 
