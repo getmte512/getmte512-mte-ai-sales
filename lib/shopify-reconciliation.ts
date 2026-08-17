@@ -19,3 +19,5 @@ export function summarizeReconciliationDecisions(decisions:{decision:string}[]){
   manualMatches:decisions.filter(item=>item.decision==="manual_match").length,
   ignored:decisions.filter(item=>item.decision==="ignored").length
 };}
+
+export function selectUnapprovedManualMatches<T extends{shopify_customer_gid:string}>(decisions:T[],approvedCustomerGids:string[]){const approved=new Set(approvedCustomerGids);return decisions.filter(decision=>!approved.has(decision.shopify_customer_gid));}
