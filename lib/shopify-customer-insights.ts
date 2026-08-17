@@ -17,3 +17,11 @@ export function buildShopifyCustomerInsights(orders:ShopifyCustomerOrder[]){
 }
 
 export function summarizeShopifyCustomerInsights(insights:ReturnType<typeof buildShopifyCustomerInsights>){return{customers:insights.length,orders:insights.reduce((sum,item)=>sum+item.orderCount,0),revenue:insights.reduce((sum,item)=>sum+item.revenue,0),unfulfilledOrders:insights.reduce((sum,item)=>sum+item.unfulfilledOrders,0),currencyCode:insights[0]?.currencyCode??"USD"};}
+
+export function recommendShopifyCustomerAction(customer:ReturnType<typeof buildShopifyCustomerInsights>[number],now:string){
+  const ageDays=Math.max(0,Math.floor((new Date(now).getTime()-new Date(customer.latestOrderAt).getTime())/86400000));
+  if(customer.unfulfilledOrders>0)return{priority:"urgent" as const,action:"Review fulfillment",ageDays};
+  if(ageDays>=30)return{priority:"high" as const,action:"Prepare reorder outreach",ageDays};
+  if(ageDays>=14)return{priority:"medium" as const,action:"Schedule customer follow-up",ageDays};
+  return{priority:"low" as const,action:"Nurture relationship",ageDays};
+}
