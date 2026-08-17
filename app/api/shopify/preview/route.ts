@@ -1,5 +1,5 @@
 import {NextResponse} from "next/server";
-import {requireUser} from "@/lib/supabase/server";
+import {requireAdmin} from "@/lib/authorization";
 import {createAdminClient} from "@/lib/supabase/admin";
 import {getShopifyReadiness} from "@/lib/shopify-config";
 import {matchShopifyCustomers,type ShopifyCustomer} from "@/lib/shopify-match";
@@ -8,7 +8,7 @@ const query=`query CustomerMatchPreview { customers(first: 50) { nodes { id disp
 
 export async function GET(){
   try{
-    await requireUser();
+    await requireAdmin();
     const readiness=getShopifyReadiness(process.env);
     if(!readiness.configured)return NextResponse.json({error:"Shopify connection settings are required."},{status:409});
     const shop=process.env.SHOPIFY_SHOP_DOMAIN!.trim().toLowerCase();
@@ -22,5 +22,5 @@ export async function GET(){
     if(error)throw error;
     const matches=matchShopifyCustomers(customers,contacts??[]);
     return NextResponse.json({matches,summary:{total:matches.length,matched:matches.filter(m=>m.contactId).length,review:matches.filter(m=>m.confidence==="review").length,unmatched:matches.filter(m=>m.confidence==="unmatched").length}});
-  }catch(error){const message=error instanceof Error?error.message:"Unable to preview Shopify matches.";return NextResponse.json({error:message==="UNAUTHORIZED"?"Sign in is required.":message},{status:message==="UNAUTHORIZED"?401:500});}
+  }catch(error){const message=error instanceof Error?error.message:"Unable to preview Shopify matches.";return NextResponse.json({error:message==="UNAUTHORIZED"?"Sign in is required.":message==="FORBIDDEN"?"Administrator access is required.":message},{status:message==="UNAUTHORIZED"?401:message==="FORBIDDEN"?403:500});}
 }
