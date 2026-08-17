@@ -7,7 +7,7 @@ const saveSchema = z.object({ contact_id:z.string().uuid(), channel:z.enum(["ema
 const statusSchema = z.object({ id:z.string().uuid(), status:z.enum(["draft","awaiting_approval","approved","rejected","sent"]) });
 
 export async function GET() {
-  try { await requireUser(); const supabase=createAdminClient(); const {data,error}=await supabase.from("outreach_drafts").select("*").order("updated_at",{ascending:false}); if(error)throw error; return NextResponse.json({drafts:data??[]}); }
+  try { await requireUser(); const supabase=createAdminClient(); const {data,error}=await supabase.from("outreach_drafts").select("*").order("updated_at",{ascending:false}).limit(500); if(error)throw error; return NextResponse.json({drafts:data??[]}); }
   catch(error){const message=error instanceof Error?error.message:"Unable to load drafts.";return NextResponse.json({error:message==="UNAUTHORIZED"?"Sign in is required.":message},{status:message==="UNAUTHORIZED"?401:500});}
 }
 

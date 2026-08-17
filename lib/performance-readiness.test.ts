@@ -1,0 +1,2 @@
+import{describe,expect,it}from"vitest";import{summarizePerformance}from"./performance-readiness";
+describe("performance readiness",()=>{it("reports normal query timing",()=>expect(summarizePerformance([{name:"CRM",durationMs:250,recordCount:20}])).toMatchObject({status:"ready",slowChecks:0,totalRecords:20}));it("warns above 1.5 seconds",()=>expect(summarizePerformance([{name:"CRM",durationMs:1600,recordCount:20}]).status).toBe("warning"));it("handles no checks",()=>expect(summarizePerformance([]).maxDurationMs).toBe(0));});
