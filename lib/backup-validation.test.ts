@@ -1,0 +1,3 @@
+import{describe,expect,it}from"vitest";import{backupTables}from"./backup-manifest";import{validateBackup}from"./backup-validation";
+const valid={version:1,exportedAt:"2026-08-16T00:00:00.000Z",data:Object.fromEntries(backupTables.map(table=>[table,[]]))};
+describe("backup validation",()=>{it("accepts a complete backup",()=>expect(validateBackup(valid).valid).toBe(true));it("rejects missing collections",()=>expect(validateBackup({version:1,exportedAt:valid.exportedAt,data:{contacts:[]}}).valid).toBe(false));it("rejects credential collections",()=>expect(validateBackup({...valid,data:{...valid.data,access_tokens:[]}}).errors.join(" ")).toContain("forbidden"));});
