@@ -36,6 +36,7 @@ More Than Energy's private retail-sales workspace. It turns retailer contact dat
 ## Verification
 
 - `npm run preflight:local`
+- `npm run security:scan`
 - `npm test`
 - `npx tsc --noEmit`
 - `npm run build`
