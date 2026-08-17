@@ -6,6 +6,7 @@ import { createOutreachDraft } from "@/lib/outreach-draft";
 import { buildReorderRecommendations } from "@/lib/reorder-intelligence";
 import { createReorderDraft } from "@/lib/reorder-draft";
 import { summarizePortalOrder } from "@/lib/portal-order";
+import { buildSentDraftPipelineUpdate } from "@/lib/draft-follow-up";
 
 type CrmContact = {
   id: string;
@@ -228,7 +229,8 @@ export function ContactImporter({role}:{role:"admin"|"sales"}) {
   }
 
   async function updateDraftStatus(id:string,status:"approved"|"rejected"|"sent") {
-    if(status==="sent"&&!window.confirm("Confirm this outreach was actually sent. This will schedule a three-day follow-up."))return;
+    const selectedDraft=drafts.find(item=>item.id===id);
+    if(status==="sent"&&!window.confirm(`Confirm this ${selectedDraft?.purpose==="reorder_follow_up"?"reorder follow-up":"outreach"} was actually sent. This will schedule a three-day follow-up.`))return;
     setBusy(true); setError("");
     const response=await fetch("/api/drafts",{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({id,status})});
     const result=await response.json();
@@ -236,7 +238,8 @@ export function ContactImporter({role}:{role:"admin"|"sales"}) {
     else {
       let followUpScheduled=true;
       if(status==="sent") try { await scheduleFollowUpForSentDraft(id); } catch(error) { followUpScheduled=false; setError(error instanceof Error?error.message:"Unable to schedule the follow-up."); }
-      setNotice(status==="approved"?"Draft approved and ready to copy.":status==="sent"&&followUpScheduled?"Outreach marked sent and a three-day follow-up was scheduled.":status==="sent"?"Outreach marked sent; the follow-up still needs to be scheduled.":"Draft returned for revision.");
+      const draftLabel=selectedDraft?.purpose==="reorder_follow_up"?"Reorder follow-up":"Outreach";
+      setNotice(status==="approved"?"Draft approved and ready to copy.":status==="sent"&&followUpScheduled?`${draftLabel} marked sent and a three-day follow-up was scheduled.`:status==="sent"?`${draftLabel} marked sent; the follow-up still needs to be scheduled.`:"Draft returned for revision.");
       await loadDrafts();
     }
     setBusy(false);
@@ -245,16 +248,10 @@ export function ContactImporter({role}:{role:"admin"|"sales"}) {
   async function scheduleFollowUpForSentDraft(draftId:string) {
     const draft=drafts.find(item=>item.id===draftId); if(!draft)return;
     const saved=pipeline.find(item=>item.contact_id===draft.contact_id);
-    const protectedStages=["sample_planned","sample_sent","follow_up_due","ordered","not_interested"];
     const followUp=new Date(); followUp.setDate(followUp.getDate()+3);
+    const update=buildSentDraftPipelineUpdate({purpose:draft.purpose,contactId:draft.contact_id,saved:saved??null,followUpOn:followUp.toISOString().slice(0,10)});
     const response=await fetch("/api/pipeline",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({
-      contact_id:draft.contact_id,
-      stage:saved&&protectedStages.includes(saved.stage)?saved.stage:"contacted",
-      next_follow_up_on:saved?.next_follow_up_on??followUp.toISOString().slice(0,10),
-      notes:saved?.notes??"Initial outreach sent; follow up in three days.",
-      opening_order_value:saved?.opening_order_value??"",
-      ordered_on:saved?.ordered_on??"",
-      reorder_follow_up_on:saved?.reorder_follow_up_on??""
+      ...update
     })});
     if(!response.ok){const result=await response.json();throw new Error(result.error??"Unable to schedule the follow-up.");}
     await loadPipeline();
