@@ -42,7 +42,7 @@ type PilotAccount={id:string;contact_id:string;status:string;feedback_notes:stri
 type LaunchReadiness={summary:{decision:string;passed:number;requiredBlocked:number;optionalPending:number};gates:{name:string;passed:boolean;required:boolean;detail:string}[];checkedAt:string};
 type AccessUser={userId:string;email:string;role:"admin"|"sales"|null;createdAt:string;updatedAt:string|null};
 
-export function ContactImporter() {
+export function ContactImporter({role}:{role:"admin"|"sales"}) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [busy, setBusy] = useState(false);
@@ -301,7 +301,7 @@ export function ContactImporter() {
       <nav className="tabs" aria-label="Milestone sections">
         <div className="tab-section"><strong>SALES</strong><div>
         <button className={view === "dashboard" ? "active" : ""} onClick={() => { setView("dashboard"); void loadContacts(); void loadDrafts(); void loadPipeline(); }}>Today</button>
-        <button className={view === "import" ? "active" : ""} onClick={() => setView("import")}>CSV Import</button>
+        {role==="admin"&&<button className={view === "import" ? "active" : ""} onClick={() => setView("import")}>CSV Import</button>}
         <button className={view === "crm" ? "active" : ""} onClick={() => { setView("crm"); void loadContacts(); }}>Contact CRM</button>
         <button className={view === "priorities" ? "active" : ""} onClick={() => { setView("priorities"); void loadContacts(); }}>Priority Buyers</button>
         <button className={view === "outreach" ? "active" : ""} onClick={() => { setView("outreach"); void loadContacts(); }}>Outreach Drafts</button>
@@ -309,12 +309,12 @@ export function ContactImporter() {
         <button className={view === "reports" ? "active" : ""} onClick={() => { setView("reports"); void loadPipeline(); }}>Reports</button>
         <button className={view === "reorders" ? "active" : ""} onClick={() => { setView("reorders"); void loadPipeline(); }}>Reorder Intelligence</button>
         <button className={view === "reorder_drafts" ? "active" : ""} onClick={() => { setView("reorder_drafts"); void loadPipeline(); }}>Reorder Drafts</button>
-        </div></div><div className="tab-section"><strong>RETAILER PORTAL</strong><div>
-        <button className={view === "portal" ? "active" : ""} onClick={() => { setView("portal"); void loadShopifyStatus(); }}>Retailer Portal Preview</button>
+        </div></div><div className="tab-section"><strong>REORDER WORKFLOW</strong><div>
+        {role==="admin"&&<button className={view === "portal" ? "active" : ""} onClick={() => { setView("portal"); void loadShopifyStatus(); }}>Retailer Portal Preview</button>}
         <button className={view === "reorder_queue" ? "active" : ""} onClick={() => { setView("reorder_queue"); void loadReorderRequests(); }}>Reorder Requests</button>
-        <button className={view === "reorder_submit" ? "active" : ""} onClick={() => setView("reorder_submit")}>Confirm Request</button>
+        {role==="admin"&&<button className={view === "reorder_submit" ? "active" : ""} onClick={() => setView("reorder_submit")}>Confirm Request</button>}
         <button className={view === "request_decision" ? "active" : ""} onClick={() => { setView("request_decision"); void loadReorderRequests(); }}>Review Decision</button>
-        </div></div><div className="tab-section"><strong>OPERATIONS</strong><div>
+        </div></div>{role==="admin"&&<div className="tab-section"><strong>OPERATIONS</strong><div>
         <button className={view === "health" ? "active" : ""} onClick={() => { setView("health"); void loadSystemHealth(); }}>System Health</button>
         <button className={view === "audit" ? "active" : ""} onClick={() => { setView("audit"); void loadAuditEvents(); }}>Audit Log</button>
         <button className={view === "backup" ? "active" : ""} onClick={() => setView("backup")}>Backup & Recovery</button>
@@ -324,7 +324,7 @@ export function ContactImporter() {
         <button className={view === "pilot" ? "active" : ""} onClick={() => { setView("pilot"); void loadPilotAccounts(); void loadContacts(""); }}>Pilot Launch</button>
         <button className={view === "launch" ? "active" : ""} onClick={() => { setView("launch"); void loadLaunchReadiness(); }}>Launch Checklist</button>
         <button className={view === "access" ? "active" : ""} onClick={() => { setView("access"); void loadAccessUsers(); }}>Access Control</button>
-        </div></div><div className="tab-section"><strong>SHOPIFY</strong><div>
+        </div></div>} {role==="admin"&&<div className="tab-section"><strong>SHOPIFY</strong><div>
         <button className={view === "shopify" ? "active" : ""} onClick={() => { setView("shopify"); void loadShopifyStatus(); }}>Shopify Sync</button>
         <button className={view === "shopify_orders" ? "active" : ""} onClick={() => { setView("shopify_orders"); void loadShopifyStatus(); }}>Shopify Orders</button>
         <button className={view === "shopify_products" ? "active" : ""} onClick={() => { setView("shopify_products"); void loadShopifyStatus(); }}>Products & Inventory</button>
@@ -332,7 +332,7 @@ export function ContactImporter() {
         <button className={view === "shopify_test" ? "active" : ""} onClick={() => { setView("shopify_test"); void loadShopifyStatus(); }}>Connection Test</button>
         <button className={view === "shopify_approval" ? "active" : ""} onClick={() => { setView("shopify_approval"); void loadShopifyStatus(); }}>Sync Approval</button>
         <button className={view === "shopify_history" ? "active" : ""} onClick={() => { setView("shopify_history"); void loadShopifyHistory(); }}>Sync History</button>
-        </div></div>
+        </div></div>}
       </nav>
 
       {error && <div className="alert error">{error}</div>}
