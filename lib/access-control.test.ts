@@ -1,0 +1,2 @@
+import{describe,expect,it}from"vitest";import{canChangeRole,updateUserRoleSchema}from"./access-control";
+describe("access control",()=>{it("prevents an administrator from removing their own access",()=>expect(canChangeRole("a","a","admin","sales")).toBe(false));it("allows assigning another user",()=>expect(canChangeRole("a","b",null,"sales")).toBe(true));it("validates role updates",()=>expect(updateUserRoleSchema.safeParse({userId:"not-a-uuid",role:"owner"}).success).toBe(false));});
