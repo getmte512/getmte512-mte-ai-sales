@@ -17,3 +17,10 @@ export function getShopifyReadiness(env: Record<string, string | undefined>): Sh
     requiredScopes: ["read_customers", "read_orders", "read_products", "read_inventory"],
   };
 }
+
+export function getShopifyAdminEndpoint(shop:string,apiVersion:string){
+  const normalized=shop.trim().toLowerCase();
+  if(!/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(normalized))throw new Error("The Shopify shop domain is invalid.");
+  if(!/^20\d{2}-(01|04|07|10)$/.test(apiVersion))throw new Error("The Shopify API version is invalid.");
+  return `https://${normalized}/admin/api/${apiVersion}/graphql.json`;
+}

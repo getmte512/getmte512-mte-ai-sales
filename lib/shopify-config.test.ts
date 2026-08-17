@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getShopifyReadiness } from "./shopify-config";
+import { getShopifyAdminEndpoint, getShopifyReadiness } from "./shopify-config";
 
 describe("Shopify readiness", () => {
   it("does not report ready without both server-only settings", () => {
@@ -11,4 +11,5 @@ describe("Shopify readiness", () => {
     expect(result.configured).toBe(true);
     expect(JSON.stringify(result)).not.toContain("secret");
   });
+  it("builds only a valid Shopify Admin endpoint",()=>{expect(getShopifyAdminEndpoint("MTE.myshopify.com","2026-01")).toBe("https://mte.myshopify.com/admin/api/2026-01/graphql.json");expect(()=>getShopifyAdminEndpoint("example.com","2026-01")).toThrow("invalid");});
 });
