@@ -13,7 +13,7 @@ export async function GET() {
 }
 
 export async function POST(request:Request) {
-  try { const{user}=await requireSales(); const body=saveSchema.parse(await request.json()); const supabase=createAdminClient(); const {data,error}=await supabase.from("outreach_drafts").upsert({...body,created_by:user.id,updated_at:new Date().toISOString()},{onConflict:"contact_id,channel,purpose"}).select("*").single(); if(error)throw error; return NextResponse.json({draft:data}); }
+  try { const{user}=await requireSales(); const body=saveSchema.parse(await request.json()); const supabase=createAdminClient(); const {data,error}=await supabase.from("outreach_drafts").upsert({...body,created_by:user.id,updated_at:new Date().toISOString()},{onConflict:"contact_id,channel,purpose"}).select("*").single(); if(error)throw error; const{error:auditError}=await supabase.from("audit_events").insert({action:draftStatusAuditAction(data.status),entity_type:"outreach_draft",entity_id:data.id,actor_id:user.id,metadata:{contactId:data.contact_id,channel:data.channel,purpose:data.purpose,status:data.status}});if(auditError)throw auditError;return NextResponse.json({draft:data}); }
   catch(error){const message=error instanceof Error?error.message:"Unable to save draft.";return NextResponse.json({error:message==="UNAUTHORIZED"?"Sign in is required.":message==="FORBIDDEN"?"Assigned team access is required.":message},{status:message==="UNAUTHORIZED"?401:message==="FORBIDDEN"?403:400});}
 }
 
