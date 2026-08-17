@@ -24,6 +24,7 @@ p { color:var(--muted); margin:0; line-height:1.55; }
 .primary,.secondary { border-radius:10px; padding:12px 18px; border:1px solid var(--ink); font-weight:800; }
 .primary { background:var(--lime); color:var(--ink); }
 .secondary { background:white; }
+.danger-button{border-color:#d8aaaa;color:var(--danger)}
 .stats { display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin:20px 0; }
 .stat { background:var(--ink); color:white; border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:3px; }
 .stat strong { font-size:26px; }

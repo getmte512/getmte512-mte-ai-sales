@@ -11,6 +11,9 @@ export const inviteUserSchema=z.object({
   confirmation:z.literal("SEND_MTE_TEAM_INVITATION"),
 });
 
+export const revokeUserAccessSchema=z.object({userId:z.string().uuid(),confirmation:z.literal("REVOKE_MTE_TEAM_ACCESS")});
+
 export function canChangeRole(actorId:string,targetId:string,currentRole:string|null,nextRole:"admin"|"sales"){
   return !(actorId===targetId&&currentRole==="admin"&&nextRole!=="admin");
 }
+export function canRevokeAccess(actorId:string,targetId:string,currentRole:string|null,adminCount:number){if(!currentRole||actorId===targetId)return false;return currentRole!=="admin"||adminCount>1;}
