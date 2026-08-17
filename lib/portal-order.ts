@@ -1,0 +1,2 @@
+export type PortalLine={productId:string;title:string;quantity:number;unitPrice:number;available:number};
+export function summarizePortalOrder(lines:PortalLine[]){const selected=lines.filter(line=>line.quantity>0);return{itemCount:selected.reduce((sum,line)=>sum+line.quantity,0),estimatedTotal:selected.reduce((sum,line)=>sum+line.quantity*line.unitPrice,0),hasInventoryIssue:selected.some(line=>line.quantity>line.available),lines:selected};}
