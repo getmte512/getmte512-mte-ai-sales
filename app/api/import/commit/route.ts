@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireUser } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/authorization";
 
 const contactSchema = z.object({
   sourceRow: z.number().int().positive(),
@@ -33,7 +33,7 @@ const bodySchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const user = await requireUser();
+    const { user } = await requireAdmin();
     const body = bodySchema.parse(await request.json());
     const supabase = createAdminClient();
     const { data, error } = await supabase.rpc("commit_contact_import", {
@@ -71,6 +71,6 @@ export async function POST(request: Request) {
           ? error.message
           : "Import failed.";
     console.error("Contact import failed:", error);
-    return NextResponse.json({ error: message === "UNAUTHORIZED" ? "Sign in is required." : message }, { status: message === "UNAUTHORIZED" ? 401 : 400 });
+    return NextResponse.json({ error: message === "UNAUTHORIZED" ? "Sign in is required." : message === "FORBIDDEN" ? "Administrator access is required." : message }, { status: message === "UNAUTHORIZED" ? 401 : message === "FORBIDDEN" ? 403 : 400 });
   }
 }

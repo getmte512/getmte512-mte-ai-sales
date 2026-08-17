@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireUser } from "@/lib/supabase/server";
+import { requireSales } from "@/lib/authorization";
 import { scoreLead } from "@/lib/lead-scoring";
 import { z } from "zod";
 
@@ -13,7 +13,7 @@ const researchSchema = z.object({
 
 export async function GET(request: Request) {
   try {
-    await requireUser();
+    await requireSales();
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("q")?.trim() ?? "";
     const health = searchParams.get("health") ?? "all";
@@ -33,13 +33,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ contacts: (data ?? []).map((contact) => ({ ...contact, ...scoreLead(contact) })) });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to load contacts.";
-    return NextResponse.json({ error: message === "UNAUTHORIZED" ? "Sign in is required." : message }, { status: message === "UNAUTHORIZED" ? 401 : 500 });
+    return NextResponse.json({ error: message === "UNAUTHORIZED" ? "Sign in is required." : message === "FORBIDDEN" ? "Assigned team access is required." : message }, { status: message === "UNAUTHORIZED" ? 401 : message === "FORBIDDEN" ? 403 : 500 });
   }
 }
 
 export async function PATCH(request: Request) {
   try {
-    await requireUser();
+    await requireSales();
     const body = researchSchema.parse(await request.json());
     const supabase = createAdminClient();
     const { id, ...fields } = body;
@@ -52,6 +52,6 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ contact: data });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to save research.";
-    return NextResponse.json({ error: message === "UNAUTHORIZED" ? "Sign in is required." : message }, { status: message === "UNAUTHORIZED" ? 401 : 400 });
+    return NextResponse.json({ error: message === "UNAUTHORIZED" ? "Sign in is required." : message === "FORBIDDEN" ? "Assigned team access is required." : message }, { status: message === "UNAUTHORIZED" ? 401 : message === "FORBIDDEN" ? 403 : 400 });
   }
 }
