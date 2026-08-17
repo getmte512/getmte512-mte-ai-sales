@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireSales } from "@/lib/authorization";
 import { scoreLead } from "@/lib/lead-scoring";
+import { chooseResearchSource } from "@/lib/research-evidence";
 import { z } from "zod";
 
 const researchSchema = z.object({
@@ -55,22 +56,22 @@ export async function PATCH(request: Request) {
   try {
     const {user}=await requireSales();
     const body = researchSchema.parse(await request.json());
-    const sourceUrl=body.linkedin_url||body.website;
-    if(!sourceUrl)return NextResponse.json({error:"Add a LinkedIn profile or company website before saving buyer research so the source can be reviewed."},{status:400});
-    const sourceType:ResearchEvidence["source_type"]=body.linkedin_url?"linkedin":"company_website";
-    const confidence:ResearchEvidence["confidence"]=body.linkedin_url?"high":"medium";
-    const supabase = createAdminClient();
-    const { id, ...fields } = body;
-    const values = Object.fromEntries(Object.entries(fields).map(([key, value]) => [key, value || null]));
-    const researchNote=body.notes||`Buyer research saved from ${sourceType==="linkedin"?"LinkedIn":"the company website"}.`;
-    const {error:evidenceError}=await supabase.from("contact_research_evidence").insert({contact_id:id,source_type:sourceType,source_url:sourceUrl,confidence,research_note:researchNote,researched_by:user.id});
-    if(evidenceError)throw evidenceError;
-    const {data:existing,error:readError}=await supabase.from("contacts").select("email").eq("id",id).single();
-    if(readError)throw readError;
-    const emailChanged=(existing.email??"").toLowerCase()!==body.email.toLowerCase();
-    const { data, error } = await supabase.from("contacts").update({ ...values, ...(emailChanged?{email_health:"unverified"}:{}), updated_at: new Date().toISOString() }).eq("id", id).select("id").single();
-    if (error) throw error;
-    return NextResponse.json({ contact: data, research:{source_type:sourceType,source_url:sourceUrl,confidence} });
+    const source=chooseResearchSource({linkedinUrl:body.linkedin_url,website:body.website});
+    if(!source)return NextResponse.json({error:"Add a LinkedIn profile or company website before saving buyer research so the source can be reviewed."},{status:400});
+    const {id,...fields}=body;
+    const researchNote=body.notes||`Buyer research saved from ${source.sourceType==="linkedin"?"LinkedIn":"the company website"}.`;
+    const supabase=createAdminClient();
+    const {data,error}=await supabase.rpc("save_contact_research",{
+      p_contact_id:id,
+      p_actor_id:user.id,
+      p_fields:fields,
+      p_source_type:source.sourceType,
+      p_source_url:source.sourceUrl,
+      p_confidence:source.confidence,
+      p_research_note:researchNote,
+    });
+    if(error)throw error;
+    return NextResponse.json({contact:{id},research:data});
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to save research.";
     return NextResponse.json({ error: message === "UNAUTHORIZED" ? "Sign in is required." : message === "FORBIDDEN" ? "Assigned team access is required." : message }, { status: message === "UNAUTHORIZED" ? 401 : message === "FORBIDDEN" ? 403 : 400 });
