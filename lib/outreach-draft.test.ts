@@ -1,0 +1,3 @@
+import { describe, expect, it } from "vitest";
+import { createOutreachDraft } from "./outreach-draft";
+describe("createOutreachDraft", () => { it("personalizes a review draft", () => { const draft=createOutreachDraft({buyerName:"Kathleen Jones",companyName:"The Health Mart",category:"Vitamins & Supplements"}); expect(draft.subject).toContain("The Health Mart"); expect(draft.body).toContain("Hi Kathleen"); expect(draft.body).toContain("vitamins & supplements"); }); it("creates a concise LinkedIn draft",()=>{const draft=createOutreachDraft({buyerName:"Kathleen Jones",companyName:"The Health Mart",channel:"linkedin"});expect(draft.subject).toBe("LinkedIn message");expect(draft.body).toContain("Hi Kathleen");expect(draft.body.length).toBeLessThan(400);}); });

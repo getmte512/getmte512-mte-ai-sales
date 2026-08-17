@@ -1,0 +1,2 @@
+import{describe,expect,it}from"vitest";import{summarizeHealth}from"./system-health";
+describe("system health",()=>{it("reports blocked checks first",()=>expect(summarizeHealth([{name:"A",status:"ready",detail:""},{name:"B",status:"blocked",detail:""}])).toMatchObject({status:"blocked",ready:1,blocked:1}));it("reports warnings without blockers",()=>expect(summarizeHealth([{name:"A",status:"warning",detail:""}]).status).toBe("warning"));it("reports ready when all checks pass",()=>expect(summarizeHealth([{name:"A",status:"ready",detail:""}]).status).toBe("ready"));});

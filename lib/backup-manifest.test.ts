@@ -1,0 +1,2 @@
+import{describe,expect,it}from"vitest";import{backupTables,buildBackupSummary}from"./backup-manifest";
+describe("backup manifest",()=>{it("includes operational records but no credential tables",()=>{expect(backupTables).toContain("contacts");expect(backupTables).toContain("audit_events");expect(backupTables).toContain("shopify_orders");expect(backupTables.join(",")).not.toMatch(/auth|secret|token/i);});it("counts exported records",()=>expect(buildBackupSummary({contacts:[{},{}],audit_events:[{}]})).toMatchObject({contacts:2,audit_events:1,reorder_requests:0}));});

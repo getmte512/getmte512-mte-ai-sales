@@ -1,0 +1,3 @@
+"use server";
+import{redirect}from"next/navigation";import{createUserClient}from"@/lib/supabase/server";import{passwordSetupSchema}from"@/lib/account-setup";
+export async function completeAccountSetup(formData:FormData){const parsed=passwordSetupSchema.safeParse({password:String(formData.get("password")??""),confirmPassword:String(formData.get("confirm_password")??"")});if(!parsed.success)redirect(`/account/setup?error=${encodeURIComponent(parsed.error.issues[0]?.message??"Choose a valid password.")}`);const supabase=await createUserClient();const{error}=await supabase.auth.updateUser({password:parsed.data.password});if(error)redirect(`/account/setup?error=${encodeURIComponent(error.message)}`);redirect("/");}

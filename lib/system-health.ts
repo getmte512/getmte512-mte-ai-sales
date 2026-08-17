@@ -1,0 +1,2 @@
+export type HealthCheck={name:string;status:"ready"|"warning"|"blocked";detail:string};
+export function summarizeHealth(checks:HealthCheck[]){const blocked=checks.filter(check=>check.status==="blocked").length;const warnings=checks.filter(check=>check.status==="warning").length;return{status:blocked?"blocked":warnings?"warning":"ready",ready:checks.filter(check=>check.status==="ready").length,warnings,blocked};}

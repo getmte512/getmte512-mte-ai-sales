@@ -2,7 +2,7 @@ import { parse } from "csv-parse/sync";
 import { NextResponse } from "next/server";
 import { suggestMapping } from "@/lib/contact-import/mapping";
 import { reviewRows } from "@/lib/contact-import/review";
-import { requireUser } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/authorization";
 
 export const runtime = "nodejs";
 
@@ -11,7 +11,7 @@ const MAX_ROWS = 50_000;
 
 export async function POST(request: Request) {
   try {
-    await requireUser();
+    await requireAdmin();
     const data = await request.formData();
     const file = data.get("file");
     if (!(file instanceof File)) return NextResponse.json({ error: "Choose a CSV file." }, { status: 400 });
@@ -35,6 +35,6 @@ export async function POST(request: Request) {
     return NextResponse.json(reviewRows(rows, mapping, headers));
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to parse CSV.";
-    return NextResponse.json({ error: message === "UNAUTHORIZED" ? "Sign in is required." : message }, { status: message === "UNAUTHORIZED" ? 401 : 400 });
+    return NextResponse.json({ error: message === "UNAUTHORIZED" ? "Sign in is required." : message === "FORBIDDEN" ? "Administrator access is required." : message }, { status: message === "UNAUTHORIZED" ? 401 : message === "FORBIDDEN" ? 403 : 400 });
   }
 }

@@ -1,0 +1,31 @@
+name: Verify MTE CRM
+
+on:
+  pull_request:
+  push:
+    branches: [main, recovery/codex-full-history]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_APP_URL: https://example.invalid
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-public-placeholder
+      SUPABASE_SERVICE_ROLE_KEY: ci-server-placeholder
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run security:scan
+      - run: npm run preflight:production
+      - run: npm test
+      - run: npx tsc --noEmit
+      - run: npm run build

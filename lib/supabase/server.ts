@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import type { CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 export async function createUserClient() {
@@ -9,7 +10,7 @@ export async function createUserClient() {
   return createServerClient(url, anonKey, {
     cookies: {
       getAll: () => cookieStore.getAll(),
-      setAll: (items) => {
+      setAll: (items: { name: string; value: string; options: CookieOptions }[]) => {
         try { items.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); }
         catch { /* Server Components cannot always write refreshed cookies. */ }
       },
