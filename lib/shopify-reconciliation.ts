@@ -11,6 +11,8 @@ export const reconciliationDecisionSchema=z.object({
   if(value.decision==="manual_match"&&!value.contactId)context.addIssue({code:"custom",path:["contactId"],message:"A CRM contact is required for a manual match."});
 });
 
+export const manualMatchApprovalSchema=z.object({confirmation:z.literal("APPROVE_REVIEWED_MANUAL_MATCHES"),decisionIds:z.array(z.string().uuid()).min(1).max(250)});
+
 export function summarizeReconciliationDecisions(decisions:{decision:string}[]){return{
   total:decisions.length,
   needsResearch:decisions.filter(item=>item.decision==="needs_research").length,
