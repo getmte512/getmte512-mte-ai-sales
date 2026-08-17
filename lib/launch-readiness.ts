@@ -1,0 +1,2 @@
+export type LaunchGate={name:string;passed:boolean;required:boolean;detail:string};
+export function summarizeLaunchReadiness(gates:LaunchGate[]){const requiredBlocked=gates.filter(gate=>gate.required&&!gate.passed);const optionalPending=gates.filter(gate=>!gate.required&&!gate.passed);return{decision:requiredBlocked.length?"not_ready":optionalPending.length?"pilot_ready":"launch_ready",passed:gates.filter(gate=>gate.passed).length,requiredBlocked:requiredBlocked.length,optionalPending:optionalPending.length};}
