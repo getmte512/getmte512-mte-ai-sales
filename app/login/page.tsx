@@ -1,4 +1,5 @@
 import { signIn } from "./actions";
+import Link from "next/link";
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const params = await searchParams;
@@ -12,6 +13,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <label>Email<input name="email" type="email" autoComplete="email" required /></label>
         <label>Password<input name="password" type="password" autoComplete="current-password" required /></label>
         <button className="primary">Sign in</button>
+        <Link className="login-link" href="/forgot-password">Forgot password?</Link>
       </form>
     </main>
   );
