@@ -9,3 +9,5 @@ export function summarizeShopifyOrders(orders:ShopifyOrderPreview[]){
     currencyCode:orders.find(order=>order.currencyCode)?.currencyCode??"USD"
   };
 }
+
+export function selectSyncableOrders(orders:ShopifyOrderPreview[]){return orders.filter(order=>Boolean(order.crmContactId)&&order.id.startsWith("gid://shopify/Order/")&&Number.isFinite(order.amount)&&order.amount>=0);}

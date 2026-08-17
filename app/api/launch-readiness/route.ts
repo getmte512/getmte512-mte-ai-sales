@@ -2,7 +2,7 @@ import{NextResponse}from"next/server";import{requireAdmin}from"@/lib/authorizati
 
 export async function GET(){try{
   await requireAdmin();const supabase=createAdminClient();
-  const tables=["contacts","outreach_drafts","sales_pipeline","shopify_sync_runs","reorder_requests","audit_events","pilot_accounts","app_user_roles"];
+  const tables=["contacts","outreach_drafts","sales_pipeline","shopify_sync_runs","shopify_orders","reorder_requests","audit_events","pilot_accounts","app_user_roles"];
   const results=await Promise.all(tables.map(table=>supabase.from(table).select(table==="app_user_roles"?"user_id":"id",{head:true,count:"exact"})));
   const databaseReady=results.every(result=>!result.error);const pilotCount=results[tables.indexOf("pilot_accounts")].count??0;
   const[{count:failedSyncs},{count:adminCount,error:roleError}]=await Promise.all([supabase.from("shopify_sync_runs").select("id",{head:true,count:"exact"}).eq("status","failed"),supabase.from("app_user_roles").select("user_id",{head:true,count:"exact"}).eq("role","admin")]);
