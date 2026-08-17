@@ -1,0 +1,3 @@
+import{z}from"zod";
+export const passwordSetupSchema=z.object({password:z.string().min(12).max(128),confirmPassword:z.string().max(128)}).refine(value=>value.password===value.confirmPassword,{message:"Passwords do not match.",path:["confirmPassword"]});
+export function inviteRedirectUrl(requestUrl:string,configuredUrl?:string){const fallback=new URL(requestUrl).origin;const base=configuredUrl?.trim()?new URL(configuredUrl):new URL(fallback);if(base.protocol!=="https:"&&base.hostname!=="localhost")throw new Error("The application URL must use HTTPS.");return new URL("/auth/confirm",base).toString();}
