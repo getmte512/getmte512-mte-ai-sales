@@ -12,3 +12,8 @@ export function buildShopifySalesAnalytics(orders:ShopifyAnalyticsOrder[]){
   const revenueChangePercent=previousMonthRevenue&&previousMonthRevenue>0?(currentMonthRevenue-previousMonthRevenue)/previousMonthRevenue*100:null;
   return{summary:{orders:valid.length,revenue,averageOrderValue:valid.length?revenue/valid.length:0,fulfillmentRate:valid.length?fulfilled/valid.length*100:0,currencyCode:valid[0]?.currency_code??"USD",currentMonthRevenue,previousMonthRevenue,revenueChangePercent},monthly};
 }
+
+export function formatShopifyAnalyticsCsv(analytics:ReturnType<typeof buildShopifySalesAnalytics>){
+  const quote=(value:string|number)=>`"${String(value).replaceAll('"','""')}"`;
+  return[["Month","Orders","Revenue","Currency"],...analytics.monthly.map(month=>[month.month,month.orders,month.revenue,analytics.summary.currencyCode])].map(row=>row.map(quote).join(",")).join("\r\n");
+}
