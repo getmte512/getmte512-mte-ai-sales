@@ -93,3 +93,17 @@ been reviewed for future Shopify integration.
 - Enforce per-user transactional search/candidate budgets and cooldowns before calling the external search provider.
 
 **Completion gate:** source-backed candidates can be queued, reviewed, deduplicated, accepted or rejected transactionally, and accepted candidates enter the CRM with durable research evidence and audit history. Automated web discovery feeds only the review queue, is source-validated and budget-guarded, and cannot create active CRM contacts or send outreach without the existing human controls.
+
+## Milestone 12 — Approval-gated outbound delivery and response tracking
+
+**Status: in progress.**
+
+- Freeze the exact approved recipient, channel, subject, and body before any delivery attempt.
+- Make delivery completion idempotent so retries cannot double-send or create conflicting sent records.
+- Preserve suppression, consent, channel eligibility, and administrator approval checks at the delivery boundary.
+- Record durable provider/manual delivery evidence and include it in production backups.
+- Add a server-only email provider integration only after the immutable delivery-intent boundary is proven.
+- Track delivery failures, replies, and conversation outcomes without allowing AI to send follow-ups autonomously.
+- Keep LinkedIn and text delivery manual until an equally reviewable, consent-safe execution boundary exists for those channels.
+
+**Completion gate:** an approved email can be frozen into an immutable delivery intent, delivered exactly once through an explicitly confirmed action, reconciled with durable delivery evidence, and connected to reply/follow-up tracking without bypassing Scott's approval or suppression/consent rules.
