@@ -1,0 +1,2 @@
+import{describe,expect,it}from"vitest";import{summarizeProductionSmokeTest}from"./production-smoke-test";
+describe("production smoke test",()=>{it("reports ready only when every check passes",()=>expect(summarizeProductionSmokeTest([{name:"a",passed:true,detail:"ok"},{name:"b",passed:true,detail:"ok"}])).toEqual({passed:2,total:2,failed:0,status:"ready"}));it("fails closed when any check fails",()=>expect(summarizeProductionSmokeTest([{name:"a",passed:true,detail:"ok"},{name:"b",passed:false,detail:"bad"}])).toEqual({passed:1,total:2,failed:1,status:"blocked"}));});
