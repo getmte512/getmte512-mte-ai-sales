@@ -127,3 +127,16 @@ Customer orders are never placed until the customer explicitly confirms them.
 - Keep the command center read-only. Ranking cannot send outreach, approve drafts, match replies, complete tasks, change pipeline state, accept prospects, or create orders.
 
 **Completion gate:** a sales user can open one workspace and see a trustworthy, source-complete, transparently ranked daily queue across buyer conversations, tasks, prospect review, and account strategy; urgent work is separated from later work; duplicate contact signals are consolidated without deleting evidence; and every state-changing action still happens through its existing explicit human-controlled workflow.
+
+## Milestone 15 — Framework and dependency security hardening
+
+**Status: implementation complete pending merge to `main`; no new credentials or database migration are required.**
+
+- Upgrade the application from Next.js 15 to stable Next.js 16.3.0 and regenerate `package-lock.json` with npm's resolver.
+- Move production PostCSS and Sharp dependencies beyond the high-severity advisory ranges reported by the prior dependency tree.
+- Raise the production dependency gate from critical-only to `high` severity so future high or critical advisories fail CI instead of remaining informational.
+- Preserve the existing Node.js 22 production baseline, Supabase integration, approval boundaries, outbound delivery controls, Shopify confirmation rules, and CRM mutation safeguards.
+- Remove the deprecated `next lint` command rather than retaining a dead Next.js 15 script after the framework upgrade.
+- Verify the exact dependency graph with `npm ci`, secret scanning, the stricter production audit, production preflight, the complete test suite, TypeScript, and the production build.
+
+**Completion gate:** the lockfile resolves Next.js 16.3.0 with production dependencies outside the previously reported high-severity PostCSS and Sharp advisory ranges; `npm audit --omit=dev --audit-level=high` passes; and the full application safety/test/build gate passes without weakening any human approval or order-confirmation control.
