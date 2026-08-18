@@ -96,7 +96,7 @@ been reviewed for future Shopify integration.
 
 ## Milestone 12 — Approval-gated outbound delivery and response tracking
 
-**Status: implementation complete on this milestone branch; production use still requires migration 045, signed Resend webhook configuration, and live validation.**
+**Status: implementation complete on `main`; production use still requires migration 045, signed Resend webhook configuration, and live validation.**
 
 - Freeze the exact approved recipient, channel, subject, and body before any delivery attempt.
 - Make delivery completion idempotent so retries cannot double-send or create conflicting sent records.
@@ -113,3 +113,17 @@ been reviewed for future Shopify integration.
 - Keep LinkedIn and text delivery manual until an equally reviewable, consent-safe execution boundary exists for those channels.
 
 **Completion gate:** an approved email can be frozen into an immutable delivery intent, delivered exactly once through an explicitly confirmed action, reconciled with durable provider delivery evidence, correlated to signed inbound reply evidence, and reviewed by a human without bypassing approval, suppression/consent rules, or triggering an autonomous response.
+
+## Milestone 13 — Conversation intelligence and assisted follow-up
+
+**Status: in progress.**
+
+- Treat inbound buyer messages as untrusted model input and never let reply text become instructions or tool authority.
+- Classify buyer intent with explicit confidence and preserve a concise reviewable summary.
+- Recommend the next human sales action and an optional pipeline-stage change without applying either automatically.
+- Draft a reply for human review when appropriate without sending it.
+- Store recommendations separately from CRM state with accepted/dismissed review history and audit evidence.
+- Prioritize high-value replies and overdue response actions across the sales workspace.
+- Learn from accepted/dismissed recommendations to improve future sales-assist quality without weakening approval gates.
+
+**Completion gate:** a matched buyer reply can be analyzed into a constrained recommendation and optional response draft, reviewed by a human, converted into explicit CRM actions only after approval, and audited end-to-end without autonomous sends or hidden pipeline mutations.
