@@ -1,11 +1,7 @@
-create table if not exists public.sales_pipeline (
-  contact_id uuid primary key references public.contacts(id) on delete cascade,
-  stage text not null default 'prospect' check (stage in ('prospect','contacted','engaged','sample_planned','sample_sent','sample_delivered','negotiating','won','lost')),
-  next_action text,
-  next_action_at timestamptz,
-  updated_by uuid references auth.users(id) on delete set null,
-  updated_at timestamptz not null default now()
-);
+alter table public.sales_pipeline add column if not exists next_action text;
+alter table public.sales_pipeline add column if not exists next_action_at timestamptz;
+alter table public.sales_pipeline drop constraint if exists sales_pipeline_stage_check;
+alter table public.sales_pipeline add constraint sales_pipeline_stage_check check (stage in ('prospect','contacted','engaged','sample_planned','sample_sent','sample_delivered','follow_up_due','negotiating','ordered','won','lost','not_interested'));
 
 create table if not exists public.sales_tasks (
   id uuid primary key default gen_random_uuid(),
@@ -33,7 +29,6 @@ create table if not exists public.sample_shipments (
   check (follow_up_at is null or shipped_at is not null)
 );
 
-alter table public.sales_pipeline enable row level security;
 alter table public.sales_tasks enable row level security;
 alter table public.sample_shipments enable row level security;
 create index if not exists sales_tasks_contact_due_idx on public.sales_tasks(contact_id,due_at);
@@ -42,7 +37,7 @@ create index if not exists sample_shipments_contact_idx on public.sample_shipmen
 create or replace function public.audit_pipeline_change() returns trigger language plpgsql security definer set search_path=public as $$
 begin
  insert into public.audit_events(action,entity_type,entity_id,actor_id,metadata)
- values('pipeline_updated','contact',new.contact_id::text,new.updated_by,jsonb_build_object('stage',new.stage,'next_action',new.next_action,'next_action_at',new.next_action_at)); return new;
+ values('pipeline_updated','contact',new.contact_id::text,new.updated_by,jsonb_build_object('stage',new.stage,'next_action',new.next_action,'next_action_at',new.next_action_at,'next_follow_up_on',new.next_follow_up_on)); return new;
 end; $$;
 drop trigger if exists audit_sales_pipeline on public.sales_pipeline;
 create trigger audit_sales_pipeline after insert or update on public.sales_pipeline for each row execute function public.audit_pipeline_change();
