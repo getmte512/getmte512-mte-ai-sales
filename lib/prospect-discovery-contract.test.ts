@@ -1,0 +1,7 @@
+import{readFileSync}from"node:fs";import{describe,expect,it}from"vitest";
+const migration=readFileSync(new URL("../supabase/migrations/035_prospect_discovery_queue.sql",import.meta.url),"utf8");
+describe("prospect discovery safety contract",()=>{
+  it("keeps discovered prospects staged until a human review",()=>{expect(migration).toContain("status text not null default 'pending'");expect(migration).toContain("p_decision not in ('accept','reject')");expect(migration).toContain("v_candidate.status <> 'pending'");expect(migration).toContain("reviewed_by=p_actor_id");});
+  it("requires reviewable evidence and records it on accepted contacts",()=>{expect(migration).toContain("source_type in ('linkedin','company_website')");expect(migration).toContain("source_url ~* '^https?://'");expect(migration).toContain("A reviewable source is required before acceptance");expect(migration).toContain("public.contact_research_evidence");});
+  it("deduplicates before creating a contact and preserves audit history",()=>{expect(migration).toContain("where normalized_email=v_candidate.normalized_email");expect(migration).toContain("where company_id=v_company_id and lower(coalesce(buyer_name,''))=lower(v_candidate.buyer_name)");expect(migration).toContain("prospect_discovery_accepted");expect(migration).toContain("prospect_discovery_rejected");expect(migration).toContain("grant execute on function public.review_prospect_discovery_candidate(uuid,uuid,text,text) to service_role");});
+});
