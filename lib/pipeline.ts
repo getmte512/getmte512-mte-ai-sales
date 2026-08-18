@@ -1,4 +1,4 @@
-export const pipelineStages=["prospect","contacted","engaged","sample_planned","sample_sent","sample_delivered","negotiating","won","lost"] as const;
+export const pipelineStages=["prospect","contacted","engaged","sample_planned","sample_sent","sample_delivered","follow_up_due","negotiating","ordered","won","lost","not_interested"] as const;
 export type PipelineStage=typeof pipelineStages[number];
 
 export function recommendedSampleFollowUp(input:{shippedAt?:string|null;deliveredAt?:string|null}){
