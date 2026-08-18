@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -11,7 +14,8 @@
     "test": "vitest run",
     "preflight:local": "node scripts/deployment-preflight.mjs",
     "preflight:production": "node scripts/deployment-preflight.mjs --production",
-    "security:scan": "node scripts/scan-tracked-secrets.mjs"
+    "security:scan": "node scripts/scan-tracked-secrets.mjs",
+    "security:audit": "npm audit --omit=dev --audit-level=critical"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
