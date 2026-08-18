@@ -1,0 +1,7 @@
+import{readFileSync}from"node:fs";import{describe,expect,it}from"vitest";
+const migration=readFileSync(new URL("../supabase/migrations/033_recovery_evidence_invariant.sql",import.meta.url),"utf8");
+describe("recovery evidence database contract",()=>{
+  it("never permits contradictory passed recovery evidence",()=>{expect(migration).toContain("backup_recovery_drills_pass_integrity_check");expect(migration).toContain("integrity_verified is true");expect(migration).toContain("error_count = 0");expect(migration).toContain("backup_version = 2");expect(migration).toContain("length(btrim(coalesce(digest,''))) = 64");expect(migration).toContain("not valid")});
+  it("revalidates integrity before database pilot activation",()=>{expect(migration).toContain("v_recovery_integrity_verified is not true");expect(migration).toContain("coalesce(v_recovery_error_count,1) <> 0");expect(migration).toContain("v_recovery_backup_version is distinct from 2");expect(migration).toContain("length(btrim(coalesce(v_recovery_digest,''))) <> 64");expect(migration).toContain("interval '7 days'")});
+  it("keeps recovery recording admin-only, audited, and service-role-only",()=>{expect(migration).toContain("role='admin'");expect(migration).toContain("backup_recovery_drill_recorded");expect(migration).toContain("revoke all on function public.record_backup_recovery_drill");expect(migration).toContain("grant execute on function public.record_backup_recovery_drill(uuid,text,boolean,integer,timestamptz,text,integer,integer,integer) to service_role")});
+});
