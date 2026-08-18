@@ -16,7 +16,7 @@ Legacy `LAUNCH_*_VERIFIED_AT` settings remain supported as fallback evidence mar
 
 ## 3. Apply database migrations
 
-Apply every Supabase migration in order through `042_outreach_delivery_intents.sql` before deploying the matching application build. Milestone 11 specifically requires every discovery migration through `041_prospect_discovery_budget_guard.sql` for the discovery queue, search-run provenance, saved profiles, profile analytics, structured review reasons, and transactional provider-usage guardrails. Milestone 12 begins with migration `042_outreach_delivery_intents.sql`, which adds the immutable outreach delivery ledger and service-role-only preparation/confirmation functions. Do not deploy code that can mark approved outreach sent against a database missing migration `042`.
+Apply every Supabase migration in order through `042_outreach_delivery_intents.sql` before deploying the matching application build. Milestone 11 specifically requires every discovery migration through `041_prospect_discovery_budget_guard.sql` for the discovery queue, search-run provenance, saved profiles, profile analytics, structured review reasons, and transactional provider-usage guardrails. Do not enable web prospect discovery against a database missing any of those migrations. Milestone 12 begins with migration `042_outreach_delivery_intents.sql`, which adds the immutable outreach delivery ledger and service-role-only preparation/confirmation functions. Do not deploy code that can mark approved outreach sent against a database missing migration `042`.
 
 ## 4. Configure Supabase authentication URLs
 
