@@ -1,0 +1,2 @@
+import{describe,expect,it}from"vitest";import{roleAllows}from"./app-role";
+describe("application roles",()=>{it("keeps admin access broad",()=>{expect(roleAllows("admin","sales")).toBe(true);expect(roleAllows("admin","retailer")).toBe(true)});it("does not let retailers into sales tools",()=>expect(roleAllows("retailer","sales")).toBe(false));it("does not let sales users impersonate retailer access",()=>expect(roleAllows("sales","retailer")).toBe(false));});
