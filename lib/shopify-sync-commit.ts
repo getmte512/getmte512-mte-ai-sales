@@ -11,6 +11,7 @@ export function buildOrderSyncRows(orders: ShopifyOrderPreview[]) {
     amount: order.amount,
     currency_code: order.currencyCode,
     ordered_at: order.createdAt,
+    lines: order.lines,
   }));
 }
 
