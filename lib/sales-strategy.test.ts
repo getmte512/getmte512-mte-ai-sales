@@ -1,0 +1,7 @@
+import{describe,expect,it}from"vitest";import{buildDailySalesStrategy}from"./sales-strategy";
+const contacts=[{id:"a",companyName:"Alpha",score:80,emailHealth:"unverified",nextAction:"Review for personalized outreach"},{id:"b",companyName:"Beta",score:60,emailHealth:"unverified",nextAction:"Research buyer and role"},{id:"c",companyName:"Suppressed",score:100,emailHealth:"suppressed",nextAction:"Review for personalized outreach"}];
+describe("buildDailySalesStrategy",()=>{
+ it("ranks approved outreach above lower-level work and excludes suppressed contacts",()=>{const result=buildDailySalesStrategy({today:"2026-08-18",contacts,drafts:[{contactId:"b",status:"approved"}],pipeline:[],samples:[]});expect(result.topActions[0].contactId).toBe("b");expect(result.actions.some(item=>item.contactId==="c")).toBe(false)});
+ it("prioritizes due sample follow-up ahead of ordinary outreach preparation",()=>{const result=buildDailySalesStrategy({today:"2026-08-18",contacts,drafts:[],pipeline:[],samples:[{contactId:"b",followUpAt:"2026-08-18T12:00:00Z",deliveredAt:"2026-08-16T12:00:00Z"}]});expect(result.topActions[0].action).toBe("Follow up on sample")});
+ it("reports actionable queue counts",()=>{const result=buildDailySalesStrategy({today:"2026-08-18",contacts,drafts:[{contactId:"a",status:"awaiting_approval"}],pipeline:[{contactId:"b",stage:"contacted",nextFollowUpOn:"2026-08-18"}],samples:[]});expect(result.summary.awaitingApproval).toBe(1);expect(result.summary.dueFollowUps).toBe(1)});
+});
