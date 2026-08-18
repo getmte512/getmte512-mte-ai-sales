@@ -1,0 +1,7 @@
+import{describe,expect,it}from"vitest";import{isKnownProspect,prospectIdentityKey}from"./prospect-discovery-dedupe";
+describe("prospect discovery local dedupe",()=>{
+  it("normalizes company, buyer, and email identity",()=>{expect(prospectIdentityKey({company_name:"  Example   Market ",buyer_name:" Pat Buyer ",email:"PAT@EXAMPLE.COM"})).toEqual({company:"example market",buyer:"pat buyer",email:"pat@example.com"});});
+  it("skips an existing CRM email or company/buyer pair",()=>{const contacts=[{company_name:"Example Market",buyer_name:"Pat Buyer",email:"pat@example.com"}];expect(isKnownProspect({company_name:"Other",buyer_name:"Someone",email:"PAT@EXAMPLE.COM"},contacts,[])).toBe(true);expect(isKnownProspect({company_name:"example market",buyer_name:"PAT BUYER",email:null},contacts,[])).toBe(true);expect(isKnownProspect({company_name:"Example Market",buyer_name:"New Buyer",email:null},contacts,[])).toBe(false);});
+  it("does not requeue previously discovered identities even when the source changes",()=>{const prior=[{company_name:"Retailer One",buyer_name:"Jamie Lee",email:null}];expect(isKnownProspect({company_name:"Retailer One",buyer_name:"Jamie Lee",email:null},[],prior)).toBe(true);});
+  it("skips account-only candidates when that account is already known",()=>{expect(isKnownProspect({company_name:"Known Store",buyer_name:null,email:null},[{company_name:"Known Store",buyer_name:"Buyer A",email:null}],[])).toBe(true);});
+});
