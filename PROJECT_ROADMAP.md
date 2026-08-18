@@ -11,15 +11,7 @@ Customer orders are never placed until the customer explicitly confirms them.
 - Securely import, clean, validate, deduplicate, and store retail contact CSVs.
 - Flag missing fields, invalid records, unsubscribes, and suppressed contacts.
 - Display contacts in a searchable lightweight CRM.
-- Establish account and contact identifiers that can later link to Shopify
-  customers and orders without rebuilding the contact database.
-- Document the future Shopify customer, product, order, and inventory connection.
-- Do not research prospects, generate outreach, send messages, or build the
-  customer reorder portal in this milestone.
-
-**Completion gate:** the importer works with MTE's real CSV, contacts are saved
-and searchable, suppression rules are verified, and the database design has
-been reviewed for future Shopify integration.
+- Establish account and contact identifiers that can later link to Shopify customers and orders without rebuilding the contact database.
 
 ## Milestone 2 — Retailer and buyer research
 
@@ -62,7 +54,6 @@ been reviewed for future Shopify integration.
 - Give approved wholesale customers secure account access.
 - Show eligible products, previous orders, and relevant availability.
 - Let customers repeat or modify an earlier order and confirm it through Shopify.
-- Show order and shipment status and provide a route to request sales help.
 - Feed confirmed reorder activity back into the MTE CRM.
 
 ## Milestone 9 — Reorder intelligence and account growth
@@ -83,47 +74,39 @@ been reviewed for future Shopify integration.
 **Status: implementation complete on `main`; production use still requires real credentials and live validation.**
 
 - Discover prospective retailer accounts and buyer candidates outside the active CRM.
-- Require a reviewable company website or LinkedIn source, confidence, and research note for every candidate.
-- Deduplicate candidates against existing CRM contacts before creating anything new.
-- Require a sales/admin review before a discovered prospect becomes a CRM contact.
-- Preserve the discovery source as contact research evidence and audit every accept/reject decision.
-- Keep outreach approval, consent, suppression, and channel eligibility rules unchanged; discovery never sends a message.
-- Support user-triggered external web discovery with consulted-source validation and server-only credentials.
-- Preserve search provenance, saved prospecting profiles, profile performance analytics, structured reviewer feedback, and advisory profile-improvement insights.
-- Enforce per-user transactional search/candidate budgets and cooldowns before calling the external search provider.
-
-**Completion gate:** source-backed candidates can be queued, reviewed, deduplicated, accepted or rejected transactionally, and accepted candidates enter the CRM with durable research evidence and audit history. Automated web discovery feeds only the review queue, is source-validated and budget-guarded, and cannot create active CRM contacts or send outreach without the existing human controls.
+- Require reviewable source evidence, confidence, and research notes.
+- Deduplicate candidates against existing CRM contacts.
+- Require sales/admin review before a discovered prospect becomes a CRM contact.
+- Preserve provenance, profiles, analytics, structured reviewer feedback, and transactional provider-usage guardrails.
+- Discovery never sends a message.
 
 ## Milestone 12 — Approval-gated outbound delivery and response tracking
 
-**Status: implementation complete on `main`; production use still requires migration 045, signed Resend webhook configuration, and live validation.**
+**Status: implementation complete on `main`; production use still requires migrations through 045, signed Resend webhook configuration, and live validation.**
 
-- Freeze the exact approved recipient, channel, subject, and body before any delivery attempt.
-- Make delivery completion idempotent so retries cannot double-send or create conflicting sent records.
-- Preserve suppression, consent, channel eligibility, and administrator approval checks at the delivery boundary.
-- Record durable provider/manual delivery evidence and include it in production backups.
-- Use a stable per-intent provider idempotency key across retry attempts and block ambiguous retries outside the provider safety window.
-- Support an optional server-only Resend adapter for explicitly confirmed approved email; provider delivery stays disabled when credentials are absent.
-- Recheck suppression and frozen-recipient consistency immediately before every provider send.
-- Verify Resend webhooks against the raw signed request and deduplicate provider events by webhook event ID.
-- Capture outbound Message-ID evidence, permanent bounces, complaints, and inbound email events.
-- Correlate replies only through RFC In-Reply-To/References evidence; unmatched inbound mail remains explicitly unmatched for review.
-- Surface a human reply-review queue without sending any response automatically.
-- Convert permanent bounces and complaints into email suppression before future outreach.
-- Keep LinkedIn and text delivery manual until an equally reviewable, consent-safe execution boundary exists for those channels.
-
-**Completion gate:** an approved email can be frozen into an immutable delivery intent, delivered exactly once through an explicitly confirmed action, reconciled with durable provider delivery evidence, correlated to signed inbound reply evidence, and reviewed by a human without bypassing approval, suppression/consent rules, or triggering an autonomous response.
+- Freeze approved delivery content and make completion idempotent.
+- Preserve suppression, consent, eligibility, and administrator approval at the delivery boundary.
+- Support optional explicitly confirmed provider email with stable idempotency and durable attempt/event evidence.
+- Correlate replies only through RFC evidence; keep unmatched inbound mail explicitly unmatched.
+- Surface a human reply-review queue and suppress permanent bounces/complaints.
+- No response is sent automatically.
 
 ## Milestone 13 — Conversation intelligence and assisted follow-up
 
-**Status: in progress.**
+**Status: implementation complete on `main`; production use still requires migrations through 050, server-only OpenAI configuration, and live validation.**
 
 - Treat inbound buyer messages as untrusted model input and never let reply text become instructions or tool authority.
+- Analyze only replies with a proven RFC conversation match or an explicit audited human match to a delivered email intent.
 - Classify buyer intent with explicit confidence and preserve a concise reviewable summary.
 - Recommend the next human sales action and an optional pipeline-stage change without applying either automatically.
-- Draft a reply for human review when appropriate without sending it.
 - Store recommendations separately from CRM state with accepted/dismissed review history and audit evidence.
-- Prioritize high-value replies and overdue response actions across the sales workspace.
-- Learn from accepted/dismissed recommendations to improve future sales-assist quality without weakening approval gates.
+- Rank replies with a transparent deterministic priority score using intent, confidence, conversation match, and age.
+- Require explicit human acceptance before recommendation actions become available.
+- Create an idempotent follow-up task only through a separate explicit action.
+- Apply a suggested pipeline stage only through a separate explicit action and retain apply evidence.
+- Copy an accepted suggested response into the standard outreach workflow only as a `draft`, with a recommendation-specific conversation thread key.
+- Preserve the existing administrator approval, suppression, delivery-intent, and exactly-once delivery boundaries for that response draft.
+- Keep unmatched-message resolution, recommendation review, task creation, pipeline application, and response-draft handoff auditable end-to-end.
+- No response is sent automatically, and AI has no autonomous CRM mutation authority.
 
-**Completion gate:** a matched buyer reply can be analyzed into a constrained recommendation and optional response draft, reviewed by a human, converted into explicit CRM actions only after approval, and audited end-to-end without autonomous sends or hidden pipeline mutations.
+**Completion gate:** a matched buyer reply can be analyzed into a constrained recommendation and optional response draft; a human can accept or dismiss it; task creation, pipeline mutation, and response-draft handoff each require separate explicit actions; repeated actions are idempotent where applicable; and the resulting evidence is auditable without autonomous sends or hidden pipeline mutations. Production validation must confirm the Milestone 13 schema through migration `050` and exercise these controls with an internal/test conversation before wider use.
