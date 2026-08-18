@@ -16,7 +16,7 @@ Legacy `LAUNCH_*_VERIFIED_AT` settings remain supported as fallback evidence mar
 
 ## 3. Apply database migrations
 
-Apply every Supabase migration in order through `041_prospect_discovery_budget_guard.sql` before deploying the matching application build. Milestone 11 depends on migrations `035`–`041` for the discovery queue, search-run provenance, saved profiles, profile analytics, structured review reasons, and transactional provider-usage guardrails. Do not enable web prospect discovery against a database missing any of those migrations.
+Apply every Supabase migration in order through `042_outreach_delivery_intents.sql` before deploying the matching application build. Milestone 11 specifically requires every discovery migration through `041_prospect_discovery_budget_guard.sql` for the discovery queue, search-run provenance, saved profiles, profile analytics, structured review reasons, and transactional provider-usage guardrails. Do not enable web prospect discovery against a database missing any of those migrations. Milestone 12 begins with migration `042_outreach_delivery_intents.sql`, which adds the immutable outreach delivery ledger and service-role-only preparation/confirmation functions. Do not deploy code that can mark approved outreach sent against a database missing migration `042`.
 
 ## 4. Configure Supabase authentication URLs
 
@@ -51,5 +51,6 @@ Recording live verification requires an administrator, explicit `RECORD_LIVE_VER
 6. Record the **Launch sign-off** with a concise note identifying the production deployment and review. The server independently rechecks all required launch conditions and refuses sign-off if any are blocked. Sign-off is evidence only; it does not authorize outreach, create Shopify orders, or bypass pilot-transition guards.
 7. Select the retailer pilot only after sign-off, then transition pilot accounts through the existing guarded workflow. Invited/active transitions independently require the current smoke, recovery, and verification evidence.
 8. If enabling Milestone 11 web discovery, run a small user-triggered search, verify the consulted source on every queued candidate, confirm no CRM contact is created before review, confirm the budget meter decrements, and confirm a reviewed acceptance stores research evidence without sending outreach.
+9. For Milestone 12 delivery-ledger validation, approve a test email, prepare it through the existing outreach workflow, confirm it sent only after the manual send is actually completed, then verify exactly one `outreach_delivery_intents` row exists for the draft with the frozen recipient/subject/body hash and that a repeated confirmation does not create a second delivery.
 
-Retain the resulting launch sign-off, smoke history, recovery-drill history, live verifications, and audit events as the launch evidence package. These records are included in authenticated production backups. Do not enable automated sending or Shopify Admin API order creation as part of this milestone.
+Retain the resulting launch sign-off, smoke history, recovery-drill history, live verifications, delivery intents, and audit events as the launch evidence package. These records are included in authenticated production backups. Do not enable autonomous sending or Shopify Admin API order creation as part of this milestone.
