@@ -2,7 +2,7 @@ create table if not exists public.outreach_delivery_intents (
   id uuid primary key default gen_random_uuid(),
   draft_id uuid not null unique references public.outreach_drafts(id) on delete restrict,
   contact_id uuid not null references public.contacts(id) on delete restrict,
-  channel text not null check (channel in ('email')),
+  channel text not null check (channel in ('email','linkedin')),
   recipient text not null,
   subject text not null,
   body text not null,
@@ -61,16 +61,20 @@ begin
 
   if not found then raise exception 'Outreach draft not found'; end if;
   if v_draft.status <> 'approved' then raise exception 'Only approved outreach can be prepared for delivery'; end if;
-  if v_draft.channel <> 'email' then raise exception 'Only email delivery is supported in this milestone slice'; end if;
+  if v_draft.channel not in ('email','linkedin') then raise exception 'Unsupported delivery channel'; end if;
 
-  select email into v_recipient from public.contacts where id = v_draft.contact_id;
-  if v_recipient is null or length(btrim(v_recipient)) = 0 then raise exception 'Contact email is required for delivery'; end if;
+  if v_draft.channel = 'email' then
+    select email into v_recipient from public.contacts where id = v_draft.contact_id;
+  else
+    select linkedin_url into v_recipient from public.contacts where id = v_draft.contact_id;
+  end if;
+  if v_recipient is null or length(btrim(v_recipient)) = 0 then raise exception 'A channel recipient is required for delivery'; end if;
 
   if exists(
     select 1 from public.suppressions
-    where contact_id = v_draft.contact_id and channel = 'email'
+    where contact_id = v_draft.contact_id and channel = v_draft.channel
   ) then
-    raise exception 'Contact is suppressed for email outreach';
+    raise exception 'Contact is suppressed for this outreach channel';
   end if;
 
   select * into v_intent
@@ -93,13 +97,13 @@ begin
   insert into public.outreach_delivery_intents(
     draft_id,contact_id,channel,recipient,subject,body,content_hash,prepared_by
   ) values (
-    v_draft.id,v_draft.contact_id,v_draft.channel,lower(btrim(v_recipient)),v_draft.subject,v_draft.body,p_content_hash,p_actor_id
+    v_draft.id,v_draft.contact_id,v_draft.channel,btrim(v_recipient),v_draft.subject,v_draft.body,p_content_hash,p_actor_id
   ) returning * into v_intent;
 
   insert into public.audit_events(action,entity_type,entity_id,actor_id,metadata)
   values(
     'outreach_delivery_prepared','outreach_delivery_intent',v_intent.id::text,p_actor_id,
-    jsonb_build_object('draft_id',v_draft.id,'contact_id',v_draft.contact_id,'channel',v_draft.channel,'recipient',lower(btrim(v_recipient)),'content_hash',p_content_hash)
+    jsonb_build_object('draft_id',v_draft.id,'contact_id',v_draft.contact_id,'channel',v_draft.channel,'recipient',btrim(v_recipient),'content_hash',p_content_hash)
   );
 
   return jsonb_build_object(
