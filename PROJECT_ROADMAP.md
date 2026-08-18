@@ -143,7 +143,7 @@ Customer orders are never placed until the customer explicitly confirms them.
 
 ## Milestone 16 — Audited command-center outcomes
 
-**Status: implementation complete pending merge to `main`; production use requires migration `051` and live validation.**
+**Status: implementation complete on `main`; production use requires migration `051` and live validation.**
 
 - Let sales/admin users explicitly mark a command-center recommendation card complete, dismiss it with a note, or defer it to a future date.
 - Store those decisions in `sales_command_decisions`, separate from buyer replies, sales tasks, pipeline rows, prospect-review records, outreach drafts, delivery state, and Shopify orders.
@@ -157,3 +157,18 @@ Customer orders are never placed until the customer explicitly confirms them.
 - Add a production smoke check for migration `051` and a live launch ceremony that verifies outcome audit evidence while confirming source CRM state remains unchanged.
 
 **Completion gate:** a sales user can complete, dismiss, or defer a recommendation card with auditable evidence; active deferrals disappear and later reappear when due; materially changed recommendations receive a new fingerprint and can reappear; source CRM records remain untouched by card outcomes; the production smoke test reports **Milestone 16 schema** as passing after migration `051`; and the full security/test/type/build gate passes.
+
+## Milestone 17 — Weekly and monthly sales operating review
+
+**Status: implementation complete pending merge to `main`; no new credentials or database migration are required beyond the Milestone 16 decision table.**
+
+- Add a read-only Sales Operating Review workspace that compares the current seven-day and 30-day windows with the immediately preceding equal periods.
+- Report Shopify revenue and order count, confirmed outreach deliveries, buyer replies, completed sales tasks, accepted prospects, delivered samples, and completed command-center cards from persisted evidence.
+- Show command-card dismissals and deferrals as workload context rather than treating them as completed selling activity.
+- Show a reply-to-delivery activity ratio as a descriptive activity measure, not as a causal conversion attribution.
+- Generate deterministic operating signals from explicit period-over-period rules; do not fabricate model-generated explanations or percentages when the prior baseline is zero.
+- Use the Pacific/Honolulu operating date for period boundaries.
+- Fail closed if any required operating-review source is unavailable instead of presenting a partial report as complete.
+- Keep the operating review read-only: it cannot change CRM records, command decisions, outreach state, or Shopify orders.
+
+**Completion gate:** a sales user can open one workspace and see comparable weekly and monthly operating performance with explicit source windows and prior-period values; zero-baseline changes are represented without invented percentage growth; missing sources block the report; and the full security/test/type/build gate passes without introducing mutation authority.
