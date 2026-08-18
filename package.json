@@ -10,18 +10,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
     "test": "vitest run",
     "preflight:local": "node scripts/deployment-preflight.mjs",
     "preflight:production": "node scripts/deployment-preflight.mjs --production",
     "security:scan": "node scripts/scan-tracked-secrets.mjs",
-    "security:audit": "npm audit --omit=dev --audit-level=critical"
+    "security:audit": "npm audit --omit=dev --audit-level=high"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.1",
     "csv-parse": "^5.6.0",
-    "next": "^15.2.4",
+    "next": "16.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "zod": "^3.24.2"
