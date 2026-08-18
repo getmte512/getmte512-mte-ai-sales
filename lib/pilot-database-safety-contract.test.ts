@@ -1,0 +1,6 @@
+import{readFileSync}from"node:fs";import{describe,expect,it}from"vitest";
+const migration=readFileSync(new URL("../supabase/migrations/032_pilot_recovery_launch_gate.sql",import.meta.url),"utf8");
+describe("pilot database safety contract",()=>{
+  it("enforces the same production evidence at the database boundary",()=>{expect(migration).toContain("public.launch_smoke_runs");expect(migration).toContain("interval '24 hours'");expect(migration).toContain("public.backup_recovery_drills");expect(migration).toContain("v_recovery_status is distinct from 'passed'");expect(migration).toContain("interval '7 days'");expect(migration).toContain("public.launch_verifications");expect(migration).toContain("('invitation','approval_flow','backup_restore')");});
+  it("keeps pilot transitions admin-only, audited, and service-role-only",()=>{expect(migration).toContain("role='admin'");expect(migration).toContain("public.audit_events");expect(migration).toContain("recovery_drill_checked_at");expect(migration).toContain("revoke all on function public.update_pilot_account_status");expect(migration).toContain("grant execute on function public.update_pilot_account_status(uuid,uuid,text,text) to service_role");});
+});
