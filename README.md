@@ -27,7 +27,7 @@ More Than Energy's private retail-sales workspace. It turns retailer contact dat
 
 ## Local setup
 
-1. Install Node.js 20 or later.
+1. Install Node.js 22 or later.
 2. Run `npm install`.
 3. Create `.env.local` with the Supabase project URL, anonymous key, and server-only service-role key.
 4. Apply the SQL files in `supabase/migrations` in numeric order.
@@ -38,6 +38,7 @@ More Than Energy's private retail-sales workspace. It turns retailer contact dat
 
 - `npm run preflight:local`
 - `npm run security:scan`
+- `npm run security:audit`
 - `npm test`
 - `npx tsc --noEmit`
 - `npm run build`
