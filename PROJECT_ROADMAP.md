@@ -78,6 +78,7 @@ Customer orders are never placed until the customer explicitly confirms them.
 - Deduplicate candidates against existing CRM contacts.
 - Require sales/admin review before a discovered prospect becomes a CRM contact.
 - Preserve provenance, profiles, analytics, structured reviewer feedback, and transactional provider-usage guardrails.
+- Automated web discovery feeds only the review queue, remains source-validated and budget-guarded, and cannot create active CRM contacts or send outreach without the existing human controls.
 - Discovery never sends a message.
 
 ## Milestone 12 — Approval-gated outbound delivery and response tracking
@@ -107,6 +108,7 @@ Customer orders are never placed until the customer explicitly confirms them.
 - Copy an accepted suggested response into the standard outreach workflow only as a `draft`, with a recommendation-specific conversation thread key.
 - Preserve the existing administrator approval, suppression, delivery-intent, and exactly-once delivery boundaries for that response draft.
 - Keep unmatched-message resolution, recommendation review, task creation, pipeline application, and response-draft handoff auditable end-to-end.
+- Aggregate accepted/dismissed recommendations into transparent intent/confidence quality signals and tuning advisories; these metrics never self-modify prompts, models, CRM state, or delivery behavior.
 - No response is sent automatically, and AI has no autonomous CRM mutation authority.
 
-**Completion gate:** a matched buyer reply can be analyzed into a constrained recommendation and optional response draft; a human can accept or dismiss it; task creation, pipeline mutation, and response-draft handoff each require separate explicit actions; repeated actions are idempotent where applicable; and the resulting evidence is auditable without autonomous sends or hidden pipeline mutations. Production validation must confirm the Milestone 13 schema through migration `050` and exercise these controls with an internal/test conversation before wider use.
+**Completion gate:** a matched buyer reply can be analyzed into a constrained recommendation and optional response draft; a human can accept or dismiss it; task creation, pipeline mutation, and response-draft handoff each require separate explicit actions; repeated actions are idempotent where applicable; recommendation quality is measurable from explicit human review outcomes; and the resulting evidence is auditable without autonomous sends or hidden pipeline mutations. Production validation must confirm the Milestone 13 schema through migration `050` and exercise these controls with an internal/test conversation before wider use.
