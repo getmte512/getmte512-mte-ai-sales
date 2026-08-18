@@ -112,3 +112,18 @@ Customer orders are never placed until the customer explicitly confirms them.
 - No response is sent automatically, and AI has no autonomous CRM mutation authority.
 
 **Completion gate:** a matched buyer reply can be analyzed into a constrained recommendation and optional response draft; a human can accept or dismiss it; task creation, pipeline mutation, and response-draft handoff each require separate explicit actions; repeated actions are idempotent where applicable; recommendation quality is measurable from explicit human review outcomes; and the resulting evidence is auditable without autonomous sends or hidden pipeline mutations. Production validation must confirm the Milestone 13 schema through migration `050` and exercise these controls with an internal/test conversation before wider use.
+
+## Milestone 14 — Unified daily sales command center
+
+**Status: implementation complete on `main`; no new credentials or database migration are required.**
+
+- Combine unreviewed buyer replies, open sales tasks, pending prospect reviews, and existing account-level strategy recommendations into one sales-priority workspace.
+- Keep the ranking deterministic and transparent; each item shows the action, reason, priority, and destination workspace rather than relying on an opaque model rank.
+- Separate work into `Act now`, `Today`, and `Up next` lanes so direct buyer attention, unmatched inbound email, overdue tasks, due-today work, and lower-urgency opportunities are clearly distinguished.
+- Treat unmatched inbound email as an explicit conversation-matching blocker instead of presenting it as a normal matched reply.
+- Consolidate multiple signals for the same active CRM contact under the highest-priority visible action while preserving secondary signals as context and preserving raw workload counts.
+- Keep pending discovery candidates separate until they are explicitly reviewed into the CRM.
+- Fail closed when any required command-center data source is unreadable; never present a partial priority queue as if it were complete.
+- Keep the command center read-only. Ranking cannot send outreach, approve drafts, match replies, complete tasks, change pipeline state, accept prospects, or create orders.
+
+**Completion gate:** a sales user can open one workspace and see a trustworthy, source-complete, transparently ranked daily queue across buyer conversations, tasks, prospect review, and account strategy; urgent work is separated from later work; duplicate contact signals are consolidated without deleting evidence; and every state-changing action still happens through its existing explicit human-controlled workflow.
