@@ -96,7 +96,7 @@ been reviewed for future Shopify integration.
 
 ## Milestone 12 — Approval-gated outbound delivery and response tracking
 
-**Status: in progress. Immutable delivery, provider-attempt reconciliation, and guarded Resend delivery are implemented; reply tracking remains.**
+**Status: implementation complete on this milestone branch; production use still requires migration 045, signed Resend webhook configuration, and live validation.**
 
 - Freeze the exact approved recipient, channel, subject, and body before any delivery attempt.
 - Make delivery completion idempotent so retries cannot double-send or create conflicting sent records.
@@ -105,7 +105,11 @@ been reviewed for future Shopify integration.
 - Use a stable per-intent provider idempotency key across retry attempts and block ambiguous retries outside the provider safety window.
 - Support an optional server-only Resend adapter for explicitly confirmed approved email; provider delivery stays disabled when credentials are absent.
 - Recheck suppression and frozen-recipient consistency immediately before every provider send.
-- Track delivery failures, replies, and conversation outcomes without allowing AI to send follow-ups autonomously.
+- Verify Resend webhooks against the raw signed request and deduplicate provider events by webhook event ID.
+- Capture outbound Message-ID evidence, permanent bounces, complaints, and inbound email events.
+- Correlate replies only through RFC In-Reply-To/References evidence; unmatched inbound mail remains explicitly unmatched for review.
+- Surface a human reply-review queue without sending any response automatically.
+- Convert permanent bounces and complaints into email suppression before future outreach.
 - Keep LinkedIn and text delivery manual until an equally reviewable, consent-safe execution boundary exists for those channels.
 
-**Completion gate:** an approved email can be frozen into an immutable delivery intent, delivered exactly once through an explicitly confirmed action, reconciled with durable delivery evidence, and connected to reply/follow-up tracking without bypassing Scott's approval or suppression/consent rules.
+**Completion gate:** an approved email can be frozen into an immutable delivery intent, delivered exactly once through an explicitly confirmed action, reconciled with durable provider delivery evidence, correlated to signed inbound reply evidence, and reviewed by a human without bypassing approval, suppression/consent rules, or triggering an autonomous response.
