@@ -2,3 +2,4 @@ import{createAdminClient}from"@/lib/supabase/admin";import{requireUser}from"@/li
 export async function requireRole(required:AppRole){const user=await requireUser();const supabase=createAdminClient();const{data,error}=await supabase.from("app_user_roles").select("role").eq("user_id",user.id).single();if(error||!data||!roleAllows(data.role as AppRole,required))throw new Error("FORBIDDEN");return{user,role:data.role as AppRole};}
 export async function requireAdmin(){return requireRole("admin");}
 export async function requireSales(){return requireRole("sales");}
+export async function requireRetailer(){const{user,role}=await requireRole("retailer");const supabase=createAdminClient();const{data,error}=await supabase.from("retailer_portal_access").select("contact_id,revoked_at").eq("user_id",user.id).single();if(error||!data||data.revoked_at)throw new Error("FORBIDDEN");return{user,role,contactId:data.contact_id as string};}
