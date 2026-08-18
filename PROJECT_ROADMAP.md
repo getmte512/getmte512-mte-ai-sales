@@ -77,3 +77,14 @@ been reviewed for future Shopify integration.
 - Complete security, privacy, recovery, monitoring, and performance reviews.
 - Test permissions, approval gates, Shopify reconciliation, and audit trails.
 - Pilot with a small set of MTE users and retailer accounts before wider launch.
+
+## Milestone 11 — Evidence-backed prospect discovery
+
+- Discover prospective retailer accounts and buyer candidates outside the active CRM.
+- Require a reviewable company website or LinkedIn source, confidence, and research note for every candidate.
+- Deduplicate candidates against existing CRM contacts before creating anything new.
+- Require a sales/admin review before a discovered prospect becomes a CRM contact.
+- Preserve the discovery source as contact research evidence and audit every accept/reject decision.
+- Keep outreach approval, consent, suppression, and channel eligibility rules unchanged; discovery never sends a message.
+
+**Completion gate:** source-backed candidates can be queued, reviewed, deduplicated, accepted or rejected transactionally, and accepted candidates enter the CRM with durable research evidence and audit history. Automated external search-provider ingestion remains a separate integration step after this review boundary is proven.
