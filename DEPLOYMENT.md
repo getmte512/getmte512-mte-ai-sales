@@ -20,7 +20,9 @@ Legacy `LAUNCH_*_VERIFIED_AT` settings remain supported as fallback evidence mar
 
 Apply every Supabase migration in order through `050_conversation_response_draft_handoff.sql` before deploying the matching application build.
 
-Milestone 11 requires discovery migrations through `041_prospect_discovery_budget_guard.sql`. Milestone 12 requires `042_outreach_delivery_intents.sql` through `045_outreach_delivery_events_and_replies.sql` for immutable delivery, provider-attempt safety, stable idempotency, signed event evidence, and inbound reply capture.
+Milestone 11 requires discovery migrations through `041_prospect_discovery_budget_guard.sql` for the discovery queue, search-run provenance, saved profiles, profile analytics, structured review reasons, and transactional provider-usage guardrails. Do not enable web prospect discovery against a database missing any of those migrations.
+
+Milestone 12 requires `042_outreach_delivery_intents.sql` through `045_outreach_delivery_events_and_replies.sql` for immutable delivery, provider-attempt safety, stable idempotency, signed event evidence, and inbound reply capture.
 
 Milestone 13 requires all migrations `046` through `050`: `046_conversation_recommendations.sql` stores AI recommendations separately from CRM state; `047_apply_conversation_recommendation.sql` provides the explicit audited pipeline action; `048_conversation_recommendation_tasks.sql` provides idempotent human-created follow-up tasks; `049_manual_reply_matching.sql` records explicit human resolution of otherwise unmatched inbound email; and `050_conversation_response_draft_handoff.sql` copies an accepted suggested response into the normal outreach workflow as `draft` only. Do not enable conversation intelligence against a database missing any of these migrations.
 
@@ -58,6 +60,7 @@ Deploy to a private preview first. Sign in as an administrator, run **System Hea
 9. For Milestone 13, use an internal/test buyer conversation. Confirm a proven RFC match can be analyzed and an unrelated inbound email cannot. Manually match the unrelated test email to a specific delivered intent and verify reviewer/note/timestamp evidence is retained before analysis becomes available.
 10. Review a generated recommendation. Confirm accepting or dismissing it changes no pipeline state and sends no response. Then separately create a follow-up task and, when a suggested stage exists, separately apply the pipeline move; repeat each action and confirm no duplicate task or duplicate state mutation occurs.
 11. For a recommendation containing a response suggestion, create the response outreach draft. Verify it enters `outreach_drafts` with `purpose='conversation_reply'`, a recommendation-specific `thread_key`, and `status='draft'`. Confirm it is not approved or sent by the handoff and must pass through the normal administrator approval/delivery workflow.
-12. Re-run the production smoke test after migration `050` and confirm the Milestone 13 schema check passes. Retain recommendation reviews, manual-match evidence, created task IDs, pipeline-apply timestamps, response-draft IDs, and audit events with the launch evidence package.
+12. Review **Conversation recommendation quality** after enough explicit decisions exist. Treat the acceptance-rate and confidence-calibration output as advisory evidence only; changing a prompt or model remains a separate human development decision.
+13. Re-run the production smoke test after migration `050` and confirm the Milestone 13 schema check passes. Retain recommendation reviews, manual-match evidence, created task IDs, pipeline-apply timestamps, response-draft IDs, and audit events with the launch evidence package.
 
 Do not enable autonomous sending, autonomous pipeline mutation, or Shopify Admin API order creation as part of this milestone.
