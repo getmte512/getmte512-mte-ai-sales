@@ -130,7 +130,7 @@ Customer orders are never placed until the customer explicitly confirms them.
 
 ## Milestone 15 — Framework and dependency security hardening
 
-**Status: implementation complete pending merge to `main`; no new credentials or database migration are required.**
+**Status: implementation complete on `main`; no new credentials or database migration are required.**
 
 - Upgrade the application from Next.js 15 to stable Next.js 16.3.0 and regenerate `package-lock.json` with npm's resolver.
 - Move production PostCSS and Sharp dependencies beyond the high-severity advisory ranges reported by the prior dependency tree.
@@ -140,3 +140,20 @@ Customer orders are never placed until the customer explicitly confirms them.
 - Verify the exact dependency graph with `npm ci`, secret scanning, the stricter production audit, production preflight, the complete test suite, TypeScript, and the production build.
 
 **Completion gate:** the lockfile resolves Next.js 16.3.0 with production dependencies outside the previously reported high-severity PostCSS and Sharp advisory ranges; `npm audit --omit=dev --audit-level=high` passes; and the full application safety/test/build gate passes without weakening any human approval or order-confirmation control.
+
+## Milestone 16 — Audited command-center outcomes
+
+**Status: implementation complete pending merge to `main`; production use requires migration `051` and live validation.**
+
+- Let sales/admin users explicitly mark a command-center recommendation card complete, dismiss it with a note, or defer it to a future date.
+- Store those decisions in `sales_command_decisions`, separate from buyer replies, sales tasks, pipeline rows, prospect-review records, outreach drafts, delivery state, and Shopify orders.
+- Bind each decision to a SHA-256 fingerprint of the item identity, kind, recommended action, and reason so a materially changed recommendation can reappear instead of being hidden by stale history.
+- Require short notes for dismiss/defer and require a future date for defer.
+- Automatically make an expired deferral visible again without mutating its underlying CRM record.
+- Record the decision row and `sales_command_decision_recorded` audit event atomically through a service-role RPC after sales/admin authorization.
+- Recompute and verify the item fingerprint server-side before accepting a decision snapshot.
+- Fail the command center closed if decision history cannot be read, preventing a queue from appearing complete when suppression history is missing.
+- Keep source workflows independent: marking a card complete does not review a reply or complete an underlying task; dismiss/defer do not change pipeline or prospect state; no command outcome approves or sends outreach or creates an order.
+- Add a production smoke check for migration `051` and a live launch ceremony that verifies outcome audit evidence while confirming source CRM state remains unchanged.
+
+**Completion gate:** a sales user can complete, dismiss, or defer a recommendation card with auditable evidence; active deferrals disappear and later reappear when due; materially changed recommendations receive a new fingerprint and can reappear; source CRM records remain untouched by card outcomes; the production smoke test reports **Milestone 16 schema** as passing after migration `051`; and the full security/test/type/build gate passes.

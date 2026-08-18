@@ -1,3 +1,3 @@
-export type CommandCenterSource="contacts"|"drafts"|"pipeline"|"samples"|"research"|"score_adjustments"|"buyer_replies"|"reply_recommendations"|"sales_tasks"|"prospect_reviews";
+export type CommandCenterSource="contacts"|"drafts"|"pipeline"|"samples"|"research"|"score_adjustments"|"buyer_replies"|"reply_recommendations"|"sales_tasks"|"prospect_reviews"|"command_decisions";
 export type CommandCenterSourceCheck={source:CommandCenterSource;ok:boolean};
 export function assessCommandCenterSourceHealth(checks:CommandCenterSourceCheck[]){const failed=checks.filter(check=>!check.ok).map(check=>check.source);return{ready:failed.length===0,failed,total:checks.length,passed:checks.length-failed.length,message:failed.length?`Command center is unavailable because ${failed.join(", ")} could not be read. Do not rely on a partial priority queue.`:"All command-center sources are readable."};}
