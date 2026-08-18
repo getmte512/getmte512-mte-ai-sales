@@ -160,7 +160,7 @@ Customer orders are never placed until the customer explicitly confirms them.
 
 ## Milestone 17 — Weekly and monthly sales operating review
 
-**Status: implementation complete pending merge to `main`; no new credentials or database migration are required beyond the Milestone 16 decision table.**
+**Status: implementation complete on `main`; no new credentials or database migration are required beyond the Milestone 16 decision table.**
 
 - Add a read-only Sales Operating Review workspace that compares the current seven-day and 30-day windows with the immediately preceding equal periods.
 - Report Shopify revenue and order count, confirmed outreach deliveries, buyer replies, completed sales tasks, accepted prospects, delivered samples, and completed command-center cards from persisted evidence.
@@ -172,3 +172,22 @@ Customer orders are never placed until the customer explicitly confirms them.
 - Keep the operating review read-only: it cannot change CRM records, command decisions, outreach state, or Shopify orders.
 
 **Completion gate:** a sales user can open one workspace and see comparable weekly and monthly operating performance with explicit source windows and prior-period values; zero-baseline changes are represented without invented percentage growth; missing sources block the report; and the full security/test/type/build gate passes without introducing mutation authority.
+
+## Milestone 18 — Immutable operating-review snapshots
+
+**Status: implementation complete pending merge to `main`; production use requires migration `052` and live validation.**
+
+- Let sales/admin users explicitly preserve the current weekly or monthly operating review as durable historical evidence from the Sales Operating Review workspace.
+- Recompute the review server-side from Shopify/CRM evidence before recording; never trust browser-supplied metric values or a browser-supplied hash.
+- Restrict snapshot recording to the current Pacific/Honolulu operating date so the API cannot manufacture retroactive reviews from today’s database state.
+- Canonicalize the period, as-of date, and review payload and bind them to a deterministic SHA-256 payload hash.
+- Store the complete review payload and source windows in `sales_operating_review_snapshots`, with one immutable row per period/as-of date.
+- Make repeated recording idempotent when the hash matches, and reject an attempt to rewrite an existing period/date with different evidence.
+- Record `sales_operating_review_snapshot_recorded` audit evidence atomically with the new snapshot through a service-role RPC after sales/admin authorization.
+- Revoke direct public/authenticated table access and expose mutation only through the service-role RPC.
+- Display retained snapshot history and evidence hashes alongside the live operating review without giving history records edit/delete controls.
+- Fail the operating-review page closed if snapshot history cannot be read, so retained-history availability is part of the trustworthy review surface.
+- Extend the read-only production smoke test with a named **Milestone 18 schema** check for migration `052` and explicitly verify the smoke test itself never records snapshots.
+- Document the production ceremony: record weekly/monthly evidence, verify 64-character hashes and audit events, repeat to prove idempotency, and retain source CRM/outreach/order state unchanged.
+
+**Completion gate:** a sales user can explicitly record weekly/monthly operating evidence for today; the server independently recomputes and hashes the review; the database preserves one immutable snapshot per period/date and rejects conflicting rewrites; repeated identical recording is idempotent; audit evidence identifies actor/period/date/hash; history is visible but not editable; production smoke reports **Milestone 18 schema** after migration `052`; and the full security/test/type/build gate passes without granting the snapshot workflow any CRM, outreach, pipeline, task, command-outcome, or Shopify-order mutation authority.

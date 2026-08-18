@@ -18,7 +18,7 @@ Legacy `LAUNCH_*_VERIFIED_AT` settings remain supported as fallback evidence mar
 
 ## 3. Apply database migrations
 
-Apply every Supabase migration in order through `051_sales_command_decisions.sql` before deploying the matching application build.
+Apply every Supabase migration in order through `052_sales_operating_review_snapshots.sql` before deploying the matching application build.
 
 Milestone 11 requires discovery migrations through `041_prospect_discovery_budget_guard.sql` for the discovery queue, search-run provenance, saved profiles, profile analytics, structured review reasons, and transactional provider-usage guardrails. Do not enable web prospect discovery against a database missing any of those migrations.
 
@@ -27,6 +27,8 @@ Milestone 12 requires `042_outreach_delivery_intents.sql` through `045_outreach_
 Milestone 13 requires all migrations `046` through `050`: `046_conversation_recommendations.sql` stores AI recommendations separately from CRM state; `047_apply_conversation_recommendation.sql` provides the explicit audited pipeline action; `048_conversation_recommendation_tasks.sql` provides idempotent human-created follow-up tasks; `049_manual_reply_matching.sql` records explicit human resolution of otherwise unmatched inbound email; and `050_conversation_response_draft_handoff.sql` copies an accepted suggested response into the normal outreach workflow as `draft` only. Do not enable conversation intelligence against a database missing any of these migrations.
 
 Milestone 16 requires `051_sales_command_decisions.sql` for audited command-center card outcomes. The migration stores complete, dismiss, and defer decisions separately from source CRM state and exposes only the service-role decision RPC. Do not enable command-center outcome controls against a database missing migration `051`.
+
+Milestone 18 requires `052_sales_operating_review_snapshots.sql`. It stores immutable weekly/monthly operating-review evidence separately from live CRM state. Snapshot creation is service-role only, requires sales/admin authorization, records an audit event, is idempotent when the same period/date hash is repeated, and refuses to replace an existing historical period with different evidence.
 
 ## 4. Configure Supabase authentication URLs
 
@@ -47,7 +49,7 @@ Deploy to a private preview first. Sign in as an administrator, run **System Hea
 - Invite a designated internal test account and complete `/auth/confirm` and account setup.
 - Exercise approval-required outreach, Shopify reconciliation (when configured), retailer checkout confirmation, and reorder-request decisions; confirm the expected audit events persist.
 - Export an authenticated production backup and run it through **Backup recovery drill**. A launch-eligible drill must pass structure validation, SHA-256 integrity verification, use backup format v2, have zero validation errors, and be no more than seven days old.
-- Run the production smoke check and confirm the latest clean result is no more than 24 hours old. The smoke test must report **Milestone 13 schema** as passing before conversation intelligence is used and **Milestone 16 schema** as passing before command-center outcomes are used.
+- Run the production smoke check and confirm the latest clean result is no more than 24 hours old. The smoke test must report **Milestone 13 schema** as passing before conversation intelligence is used, **Milestone 16 schema** as passing before command-center outcomes are used, and **Milestone 18 schema** as passing before immutable operating-review snapshots are recorded.
 
 ## 7. Final launch ceremony
 
@@ -66,5 +68,7 @@ Deploy to a private preview first. Sign in as an administrator, run **System Hea
 13. Re-run the production smoke test after migration `050` and confirm the Milestone 13 schema check passes. Retain recommendation reviews, manual-match evidence, created task IDs, pipeline-apply timestamps, response-draft IDs, and audit events with the launch evidence package.
 14. For Milestone 16, open the Daily Sales Command Center with test data and exercise complete, dismiss, and defer on recommendation cards. Confirm dismiss/defer require notes, defer requires a future date, an active deferral hides the card until its date expires, and a materially changed recommendation can reappear with a new fingerprint. Confirm each decision creates `sales_command_decision_recorded` audit evidence while the underlying reply review status, sales task completion state, pipeline stage, prospect review state, outreach approval/delivery state, and Shopify order state remain unchanged.
 15. Re-run the production smoke test after migration `051` and confirm **Milestone 16 schema** passes before enabling command-center outcome controls for production users.
+16. For Milestone 18, open Sales Operating Review and record the current weekly and monthly snapshots. Confirm the server recomputes each review, each stored row has a 64-character SHA-256 payload hash, and `sales_operating_review_snapshot_recorded` audit evidence identifies the actor, period, date, and hash. Repeat the same snapshot and confirm it is idempotent. Do not attempt to alter source business records as part of snapshot recording.
+17. Re-run the production smoke test after migration `052` and confirm **Milestone 18 schema** passes before relying on retained operating-review history.
 
 Do not enable autonomous sending, autonomous pipeline mutation, autonomous task completion, automatic reply review, or Shopify Admin API order creation as part of this milestone.
