@@ -1,18 +1,20 @@
 export type LaunchGate={name:string;passed:boolean;required:boolean;detail:string};
 export type LaunchVerificationEvidence={invitationVerifiedAt:string|null;approvalFlowVerifiedAt:string|null;backupRestoreVerifiedAt:string|null};
+export type LaunchVerificationRow={verification_key:"invitation"|"approval_flow"|"backup_restore";verified_at:string};
 
-function verifiedAt(value:string|undefined){
+function verifiedAt(value:string|undefined|null){
   const trimmed=value?.trim();
   if(!trimmed)return null;
   const time=Date.parse(trimmed);
   return Number.isFinite(time)&&time<=Date.now()?new Date(time).toISOString():null;
 }
 
-export function getLaunchVerificationEvidence(env:Record<string,string|undefined>):LaunchVerificationEvidence{
+export function getLaunchVerificationEvidence(env:Record<string,string|undefined>,rows:LaunchVerificationRow[]=[]):LaunchVerificationEvidence{
+  const byKey=new Map(rows.map(row=>[row.verification_key,verifiedAt(row.verified_at)]));
   return{
-    invitationVerifiedAt:verifiedAt(env.LAUNCH_INVITATION_VERIFIED_AT),
-    approvalFlowVerifiedAt:verifiedAt(env.LAUNCH_APPROVAL_FLOW_VERIFIED_AT),
-    backupRestoreVerifiedAt:verifiedAt(env.LAUNCH_BACKUP_RESTORE_VERIFIED_AT)
+    invitationVerifiedAt:byKey.get("invitation")??verifiedAt(env.LAUNCH_INVITATION_VERIFIED_AT),
+    approvalFlowVerifiedAt:byKey.get("approval_flow")??verifiedAt(env.LAUNCH_APPROVAL_FLOW_VERIFIED_AT),
+    backupRestoreVerifiedAt:byKey.get("backup_restore")??verifiedAt(env.LAUNCH_BACKUP_RESTORE_VERIFIED_AT)
   };
 }
 
