@@ -8,15 +8,17 @@ Create the private Next.js project with the chosen host, then set `NEXT_PUBLIC_A
 
 ## 2. Configure environment settings
 
-Use `.env.example` as the field list. Enter real values only in the hosting provider's encrypted environment settings. Keep `SUPABASE_SERVICE_ROLE_KEY`, `SHOPIFY_ADMIN_ACCESS_TOKEN`, and `OPENAI_API_KEY` server-only. Never paste them into issues, commits, build logs, or chat.
+Use `.env.example` as the field list. Enter real values only in the hosting provider's encrypted environment settings. Keep `SUPABASE_SERVICE_ROLE_KEY`, `SHOPIFY_ADMIN_ACCESS_TOKEN`, `OPENAI_API_KEY`, and `RESEND_API_KEY` server-only. Never paste them into issues, commits, build logs, or chat.
 
 Web prospect discovery remains disabled unless `OPENAI_API_KEY` is configured. Its model and per-user search/candidate/cooldown limits are server-side settings. Keep the default limits until real usage is reviewed; raising them is an explicit operational decision, not a requirement for launch.
+
+Provider-backed outbound email remains disabled unless both `RESEND_API_KEY` and a verified `OUTREACH_FROM_EMAIL` are configured. `OUTREACH_FROM_NAME` is optional. Do not configure a browser-prefixed copy of any provider credential. Manual approved-email delivery remains available when provider delivery is disabled.
 
 Legacy `LAUNCH_*_VERIFIED_AT` settings remain supported as fallback evidence markers. New production verification should be recorded through the authenticated Launch Checklist after the corresponding live check succeeds so the verifier, timestamp, note, and audit event are retained without requiring a redeploy.
 
 ## 3. Apply database migrations
 
-Apply every Supabase migration in order through `043_outreach_delivery_attempts.sql` before deploying the matching application build. Milestone 11 specifically requires every discovery migration through `041_prospect_discovery_budget_guard.sql` for the discovery queue, search-run provenance, saved profiles, profile analytics, structured review reasons, and transactional provider-usage guardrails. Do not enable web prospect discovery against a database missing any of those migrations. Milestone 12 begins with `042_outreach_delivery_intents.sql` for the immutable delivery ledger and `043_outreach_delivery_attempts.sql` for atomic provider-attempt claims, expiration, reconciliation, and idempotency evidence. Do not enable provider-backed outreach delivery against a database missing either Milestone 12 migration.
+Apply every Supabase migration in order through `044_stable_outreach_provider_idempotency.sql` before deploying the matching application build. Milestone 11 specifically requires every discovery migration through `041_prospect_discovery_budget_guard.sql` for the discovery queue, search-run provenance, saved profiles, profile analytics, structured review reasons, and transactional provider-usage guardrails. Do not enable web prospect discovery against a database missing any of those migrations. Milestone 12 uses `042_outreach_delivery_intents.sql` for immutable delivery snapshots, `043_outreach_delivery_attempts.sql` for atomic provider attempt claims/reconciliation, and `044_stable_outreach_provider_idempotency.sql` so every retry of one immutable email uses the same provider idempotency key. Do not enable provider-backed outreach delivery against a database missing any Milestone 12 migration.
 
 ## 4. Configure Supabase authentication URLs
 
@@ -28,7 +30,7 @@ In Supabase Authentication URL settings:
 
 ## 5. Run verification
 
-Use Node.js 22 or later. Run `npm run preflight:production`, `npm run security:scan`, `npm run security:audit`, `npm test`, `npx tsc --noEmit`, and `npm run build`. The preflight command reports only presence and safety status; it never prints credential values.
+Use Node.js 22 or later. Run `npm run preflight:production`, `npm run security:scan`, `npm run security:audit`, `npm test`, `npx tsc --noEmit`, and `npm run build`. The preflight command reports only presence and safety status; it never prints credential values. When Resend delivery is enabled, preflight requires the API key and From address together and validates the From-address shape without printing either secret or credential value.
 
 ## 6. Controlled release and evidence
 
@@ -52,6 +54,7 @@ Recording live verification requires an administrator, explicit `RECORD_LIVE_VER
 7. Select the retailer pilot only after sign-off, then transition pilot accounts through the existing guarded workflow. Invited/active transitions independently require the current smoke, recovery, and verification evidence.
 8. If enabling Milestone 11 web discovery, run a small user-triggered search, verify the consulted source on every queued candidate, confirm no CRM contact is created before review, confirm the budget meter decrements, and confirm a reviewed acceptance stores research evidence without sending outreach.
 9. For Milestone 12 delivery-ledger validation, approve a test email, prepare it through the existing outreach workflow, confirm it sent only after the manual send is actually completed, then verify exactly one `outreach_delivery_intents` row exists for the draft with the frozen recipient/subject/body hash and that a repeated confirmation does not create a second delivery.
-10. Before enabling any provider send adapter, claim the prepared test intent twice and verify both calls return the same live attempt/idempotency key. Reconcile one failed attempt and verify the intent remains prepared/retryable; reconcile a later successful attempt and verify the intent/draft become delivered/sent exactly once with provider message evidence.
+10. Before enabling provider delivery, claim the prepared test intent twice and verify both calls return the same live attempt/idempotency key. Reconcile one failed attempt and verify the intent remains prepared/retryable; reconcile a later successful attempt and verify the intent/draft become delivered/sent exactly once with provider message evidence.
+11. After configuring Resend, use **Outbound Delivery** with an internal/test recipient first. Prepare an already approved test email, verify the frozen recipient and subject, choose **Send approved email now**, and confirm exactly one provider message ID is stored. Retry the same action and confirm no second external email is created. Then temporarily suppress a test contact and verify provider sending is blocked even if the email was approved earlier.
 
-Retain the resulting launch sign-off, smoke history, recovery-drill history, live verifications, delivery intents, delivery attempts, and audit events as the launch evidence package. These records are included in authenticated production backups. Do not enable autonomous sending or Shopify Admin API order creation as part of this milestone.
+Retain the resulting launch sign-off, smoke history, recovery-drill history, live verifications, delivery intents, delivery attempts, provider message IDs, and audit events as the launch evidence package. These records are included in authenticated production backups. Do not enable autonomous sending or Shopify Admin API order creation as part of this milestone.

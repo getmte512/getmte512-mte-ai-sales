@@ -96,13 +96,15 @@ been reviewed for future Shopify integration.
 
 ## Milestone 12 — Approval-gated outbound delivery and response tracking
 
-**Status: in progress.**
+**Status: in progress. Immutable delivery, provider-attempt reconciliation, and guarded Resend delivery are implemented; reply tracking remains.**
 
 - Freeze the exact approved recipient, channel, subject, and body before any delivery attempt.
 - Make delivery completion idempotent so retries cannot double-send or create conflicting sent records.
 - Preserve suppression, consent, channel eligibility, and administrator approval checks at the delivery boundary.
 - Record durable provider/manual delivery evidence and include it in production backups.
-- Add a server-only email provider integration only after the immutable delivery-intent boundary is proven.
+- Use a stable per-intent provider idempotency key across retry attempts and block ambiguous retries outside the provider safety window.
+- Support an optional server-only Resend adapter for explicitly confirmed approved email; provider delivery stays disabled when credentials are absent.
+- Recheck suppression and frozen-recipient consistency immediately before every provider send.
 - Track delivery failures, replies, and conversation outcomes without allowing AI to send follow-ups autonomously.
 - Keep LinkedIn and text delivery manual until an equally reviewable, consent-safe execution boundary exists for those channels.
 
