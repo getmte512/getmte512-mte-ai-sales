@@ -55,7 +55,7 @@ Deploy to a private preview first. Sign in as an administrator, run **System Hea
 4. Confirm the invitation, approval-flow, and backup/recovery live verifications are recorded.
 5. Confirm there are no failed Shopify sync runs and review any approved-but-unsent outreach drafts. No autonomous-send gate should be enabled.
 6. Record the **Launch sign-off** only after the server independently rechecks all required launch conditions.
-7. If enabling Milestone 11 web discovery, run a small user-triggered search and verify source evidence, review gating, and budget enforcement.
+7. If enabling Milestone 11 web discovery, run a small user-triggered search, verify the consulted source on every queued candidate, confirm no CRM contact is created before review, confirm the budget meter decrements, and confirm a reviewed acceptance stores research evidence without sending outreach.
 8. For Milestone 12, validate immutable delivery intent creation, stable provider idempotency, signed webhook evidence, RFC reply matching, bounce/complaint suppression, and exactly-once delivery behavior with an internal recipient.
 9. For Milestone 13, use an internal/test buyer conversation. Confirm a proven RFC match can be analyzed and an unrelated inbound email cannot. Manually match the unrelated test email to a specific delivered intent and verify reviewer/note/timestamp evidence is retained before analysis becomes available.
 10. Review a generated recommendation. Confirm accepting or dismissing it changes no pipeline state and sends no response. Then separately create a follow-up task and, when a suggested stage exists, separately apply the pipeline move; repeat each action and confirm no duplicate task or duplicate state mutation occurs.
