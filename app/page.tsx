@@ -12,5 +12,5 @@ export default async function Home(){
     return <AwaitingAccess/>;
   }
   const role: "admin"|"sales"=access.role==="admin"?"admin":"sales";
-  return <main><header className="topbar"><div><span className="eyebrow">MORE THAN ENERGY</span><h1>Retail Contact CRM</h1></div><div className="account-controls"><span className="scope-pill">{role} access</span>{role==="admin"&&<Link className="sign-out-button" href="/launch">Launch Checklist</Link>}<form action={signOut}><button className="sign-out-button">Sign out</button></form></div></header><ContactImporter role={role}/></main>;
+  return <main><header className="topbar"><div><span className="eyebrow">MORE THAN ENERGY</span><h1>Retail Contact CRM</h1></div><div className="account-controls"><span className="scope-pill">{role} access</span><Link className="sign-out-button" href="/prospects">Prospect Discovery</Link>{role==="admin"&&<Link className="sign-out-button" href="/launch">Launch Checklist</Link>}<form action={signOut}><button className="sign-out-button">Sign out</button></form></div></header><ContactImporter role={role}/></main>;
 }
