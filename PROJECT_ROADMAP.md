@@ -80,11 +80,16 @@ been reviewed for future Shopify integration.
 
 ## Milestone 11 — Evidence-backed prospect discovery
 
+**Status: implementation complete on `main`; production use still requires real credentials and live validation.**
+
 - Discover prospective retailer accounts and buyer candidates outside the active CRM.
 - Require a reviewable company website or LinkedIn source, confidence, and research note for every candidate.
 - Deduplicate candidates against existing CRM contacts before creating anything new.
 - Require a sales/admin review before a discovered prospect becomes a CRM contact.
 - Preserve the discovery source as contact research evidence and audit every accept/reject decision.
 - Keep outreach approval, consent, suppression, and channel eligibility rules unchanged; discovery never sends a message.
+- Support user-triggered external web discovery with consulted-source validation and server-only credentials.
+- Preserve search provenance, saved prospecting profiles, profile performance analytics, structured reviewer feedback, and advisory profile-improvement insights.
+- Enforce per-user transactional search/candidate budgets and cooldowns before calling the external search provider.
 
-**Completion gate:** source-backed candidates can be queued, reviewed, deduplicated, accepted or rejected transactionally, and accepted candidates enter the CRM with durable research evidence and audit history. Automated external search-provider ingestion remains a separate integration step after this review boundary is proven.
+**Completion gate:** source-backed candidates can be queued, reviewed, deduplicated, accepted or rejected transactionally, and accepted candidates enter the CRM with durable research evidence and audit history. Automated web discovery feeds only the review queue, is source-validated and budget-guarded, and cannot create active CRM contacts or send outreach without the existing human controls.
