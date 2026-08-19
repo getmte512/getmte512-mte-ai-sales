@@ -1,0 +1,3 @@
+export type ReviewAnnotation={id:string;snapshotId:string;annotationType:"observation"|"decision"|"risk";body:string;createdBy:string;createdAt:string};
+export type ReviewAction={annotationId:string;snapshotId:string;kind:"decision"|"risk";summary:string;createdBy:string;createdAt:string};
+export function buildReviewActionRegister(annotations:ReviewAnnotation[]):ReviewAction[]{return annotations.filter(a=>a.annotationType==="decision"||a.annotationType==="risk").map(a=>({annotationId:a.id,snapshotId:a.snapshotId,kind:a.annotationType as"decision"|"risk",summary:a.body,createdBy:a.createdBy,createdAt:a.createdAt})).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));}
