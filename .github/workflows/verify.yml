@@ -17,6 +17,8 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-public-placeholder
       SUPABASE_SERVICE_ROLE_KEY: ci-server-placeholder
+      REVIEW_EVIDENCE_SIGNING_SECRET: ci-review-evidence-signing-secret-32chars
+      REVIEW_EVIDENCE_SIGNING_KEY_ID: ci-primary
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
