@@ -18,7 +18,7 @@ Legacy `LAUNCH_*_VERIFIED_AT` settings remain supported as fallback evidence mar
 
 ## 3. Apply database migrations
 
-Apply every Supabase migration in order through `052_sales_operating_review_snapshots.sql` before deploying the matching application build.
+Apply every Supabase migration in order through `055_operating_review_annotations.sql` before deploying the current application build. The Milestone 18 baseline remains `052_sales_operating_review_snapshots.sql`; the current operating-review feature set additionally requires migrations `053` through `055`.
 
 Milestone 11 requires discovery migrations through `041_prospect_discovery_budget_guard.sql` for the discovery queue, search-run provenance, saved profiles, profile analytics, structured review reasons, and transactional provider-usage guardrails. Do not enable web prospect discovery against a database missing any of those migrations.
 
@@ -29,6 +29,14 @@ Milestone 13 requires all migrations `046` through `050`: `046_conversation_reco
 Milestone 16 requires `051_sales_command_decisions.sql` for audited command-center card outcomes. The migration stores complete, dismiss, and defer decisions separately from source CRM state and exposes only the service-role decision RPC. Do not enable command-center outcome controls against a database missing migration `051`.
 
 Milestone 18 requires `052_sales_operating_review_snapshots.sql`. It stores immutable weekly/monthly operating-review evidence separately from live CRM state. Snapshot creation is service-role only, requires sales/admin authorization, records an audit event, is idempotent when the same period/date hash is repeated, and refuses to replace an existing historical period with different evidence.
+
+Milestone 20 requires `053_sales_operating_targets.sql` for versioned weekly/monthly operating targets. Target changes are administrator-only, append historical versions instead of overwriting them, and create audit evidence.
+
+Milestone 21 requires `054_operating_review_target_context.sql`. New review snapshots preserve the exact target set and deterministic scorecard in force when the snapshot is recorded; the legacy service-role snapshot signature is revoked so target context cannot be bypassed.
+
+Milestone 25 requires `055_operating_review_annotations.sql` for append-only observations, decisions, and risks attached to immutable review snapshots. Annotation writes are sales/admin authorized, service-role mediated, audited, and cannot rewrite snapshot or target evidence.
+
+Milestones 19, 22 through 24, and 26 through 33 are read-only or reuse the migrations above; they do not add additional database migrations.
 
 ## 4. Configure Supabase authentication URLs
 
@@ -49,7 +57,7 @@ Deploy to a private preview first. Sign in as an administrator, run **System Hea
 - Invite a designated internal test account and complete `/auth/confirm` and account setup.
 - Exercise approval-required outreach, Shopify reconciliation (when configured), retailer checkout confirmation, and reorder-request decisions; confirm the expected audit events persist.
 - Export an authenticated production backup and run it through **Backup recovery drill**. A launch-eligible drill must pass structure validation, SHA-256 integrity verification, use backup format v2, have zero validation errors, and be no more than seven days old.
-- Run the production smoke check and confirm the latest clean result is no more than 24 hours old. The smoke test must report **Milestone 13 schema** as passing before conversation intelligence is used, **Milestone 16 schema** as passing before command-center outcomes are used, and **Milestone 18 schema** as passing before immutable operating-review snapshots are recorded.
+- Run the production smoke check and confirm the latest clean result is no more than 24 hours old. The smoke test must report **Milestone 13 schema** as passing before conversation intelligence is used, **Milestone 16 schema** before command-center outcomes, **Milestone 18 schema** before immutable reviews, **Milestone 20 schema** before operating targets, **Milestone 21 schema** before target-aware snapshots, and **Milestone 25 schema** before review annotations.
 
 ## 7. Final launch ceremony
 
@@ -70,5 +78,11 @@ Deploy to a private preview first. Sign in as an administrator, run **System Hea
 15. Re-run the production smoke test after migration `051` and confirm **Milestone 16 schema** passes before enabling command-center outcome controls for production users.
 16. For Milestone 18, open Sales Operating Review and record the current weekly and monthly snapshots. Confirm the server recomputes each review, each stored row has a 64-character SHA-256 payload hash, and `sales_operating_review_snapshot_recorded` audit evidence identifies the actor, period, date, and hash. Repeat the same snapshot and confirm it is idempotent. Do not attempt to alter source business records as part of snapshot recording.
 17. Re-run the production smoke test after migration `052` and confirm **Milestone 18 schema** passes before relying on retained operating-review history.
+18. Apply migration `053`, set one internal/test weekly and monthly operating target, confirm a new target version and `sales_operating_target_set` audit event are recorded, and confirm prior target history remains visible rather than overwritten.
+19. Apply migration `054`, record a fresh internal/test operating-review snapshot, and verify both the business-evidence hash and target-context hash are present and immutable. Confirm the legacy target-less service-role snapshot function cannot be executed.
+20. Apply migration `055`, add an Observation, Decision, and Risk to an internal/test immutable snapshot, and verify each creates `sales_operating_review_annotation_added` audit evidence without changing the snapshot payload or target hash.
+21. Open Review Context and verify weekly/monthly context separation, cadence freshness, context coverage, snapshot-specific drilldown, and decision/risk carry-forward are all read-only views over the stored evidence.
+22. Use **Export Evidence** and retain the downloaded JSON with the launch evidence package. Confirm the manifest counts match the exported arrays and the 64-character evidence hash remains the same if the exact evidence is exported again later.
+23. Re-run the production smoke test after migration `055` and confirm **Milestone 20 schema**, **Milestone 21 schema**, and **Milestone 25 schema** all pass.
 
 Do not enable autonomous sending, autonomous pipeline mutation, autonomous task completion, automatic reply review, or Shopify Admin API order creation as part of this milestone.
