@@ -175,7 +175,7 @@ Customer orders are never placed until the customer explicitly confirms them.
 
 ## Milestone 18 — Immutable operating-review snapshots
 
-**Status: implementation complete pending merge to `main`; production use requires migration `052` and live validation.**
+**Status: implementation complete on `main`; production use requires migration `052` and live validation.**
 
 - Let sales/admin users explicitly preserve the current weekly or monthly operating review as durable historical evidence from the Sales Operating Review workspace.
 - Recompute the review server-side from Shopify/CRM evidence before recording; never trust browser-supplied metric values or a browser-supplied hash.
@@ -191,3 +191,104 @@ Customer orders are never placed until the customer explicitly confirms them.
 - Document the production ceremony: record weekly/monthly evidence, verify 64-character hashes and audit events, repeat to prove idempotency, and retain source CRM/outreach/order state unchanged.
 
 **Completion gate:** a sales user can explicitly record weekly/monthly operating evidence for today; the server independently recomputes and hashes the review; the database preserves one immutable snapshot per period/date and rejects conflicting rewrites; repeated identical recording is idempotent; audit evidence identifies actor/period/date/hash; history is visible but not editable; production smoke reports **Milestone 18 schema** after migration `052`; and the full security/test/type/build gate passes without granting the snapshot workflow any CRM, outreach, pipeline, task, command-outcome, or Shopify-order mutation authority.
+
+## Milestone 19 — Historical operating trends
+
+**Status: implementation complete on `main`; no new migration or credentials required.**
+
+Compare immutable weekly/monthly snapshots over time across revenue, orders, delivered outreach, buyer replies, completed tasks, accepted prospects, delivered samples, and command-card completions using deterministic like-for-like math.
+
+## Milestone 20 — Versioned operating targets
+
+**Status: implementation complete on `main`; production use requires migration `053`.**
+
+Administrators set audited weekly/monthly targets as append-only versions; the operating review shows deterministic actual-versus-target gaps without automatic CRM or outreach actions.
+
+## Milestone 21 — Target-aware immutable snapshots
+
+**Status: implementation complete on `main`; production use requires migration `054`.**
+
+Each new immutable review snapshot preserves the exact active target context and deterministic target scorecard, with a separate SHA-256 target hash and no target-less service-role snapshot path.
+
+## Milestone 22 — Target-attainment trends
+
+**Status: implementation complete on `main`; no new migration required.**
+
+Historical goal performance is calculated only from target context frozen into immutable snapshots so later target changes cannot rewrite old attainment results.
+
+## Milestone 23 — Target-aware command focus
+
+**Status: implementation complete on `main`; no new migration required.**
+
+Below-target weekly metrics produce transparent advisory focus signals linked to existing human-controlled workflows; the goal layer cannot create tasks or mutate CRM state.
+
+## Milestone 24 — Target-change governance
+
+**Status: implementation complete on `main`; no new migration required.**
+
+Target version history remains visible with prior value, delta, effective dates, reason, timestamp, and actor so goal changes cannot silently move the goalposts.
+
+## Milestone 25 — Auditable operating-review annotations
+
+**Status: implementation complete on `main`; production use requires migration `055`.**
+
+Sales/admin users can append Observations, Decisions, and Risks to immutable review snapshots. Annotation writes are explicitly confirmed, role-gated, audit logged, backup-covered, and cannot rewrite snapshot metrics or target evidence.
+
+## Milestone 26 — Decision and risk carry-forward register
+
+**Status: implementation complete on `main`; no new migration required.**
+
+A deterministic read-only register carries forward recorded Decisions and Risks while Observations remain in the complete annotation history.
+
+## Milestone 27 — Review-context summary
+
+**Status: implementation complete on `main`; no new migration required.**
+
+The main operating review surfaces context counts plus the latest recorded decision and risk directly from append-only evidence.
+
+## Milestone 28 — Review-context coverage
+
+**Status: implementation complete on `main`; no new migration required.**
+
+The context workspace identifies immutable snapshots with and without preserved human context without automatically creating reminders or tasks.
+
+## Milestone 29 — Period-aware review context
+
+**Status: implementation complete on `main`; no new migration required.**
+
+Weekly and monthly observations, decisions, and risks are summarized independently so one review cadence cannot inflate the other.
+
+## Milestone 30 — Cadence-specific context headlines
+
+**Status: implementation complete on `main`; no new migration required.**
+
+The main operating review shows the latest weekly decision/risk separately from the latest monthly decision/risk, preserving cadence boundaries.
+
+## Milestone 31 — Context freshness by cadence
+
+**Status: implementation complete on `main`; no new migration required.**
+
+Weekly/monthly context is explicitly marked current, behind, or missing according to whether the newest annotation belongs to the latest immutable snapshot for that cadence.
+
+## Milestone 32 — Snapshot-specific context drilldown
+
+**Status: implementation complete on `main`; no new migration required.**
+
+Each immutable review snapshot displays only the observations, decisions, and risks recorded against that exact snapshot, with no edit/resolve mutation path.
+
+## Milestone 33 — Operating-review evidence export
+
+**Status: implementation complete on `main`; no new migration required.**
+
+Sales users can export immutable review snapshots, target payloads/hashes, and append-only annotations as a no-store JSON evidence package with deterministic evidence hash and counts for archival or audit handoff.
+
+## Milestone 34 — Schema, deployment, and roadmap alignment
+
+**Status: implementation in progress.**
+
+- Extend production smoke verification through migration `055`, including a named Milestone 25 schema check.
+- Keep the smoke path read-only and explicitly prohibit annotation writes during verification.
+- Update deployment instructions through migrations `053`, `054`, and `055` while preserving earlier milestone validation requirements.
+- Align roadmap status with the actual merged implementation through Milestone 33.
+
+**Completion gate:** production operators can follow one current deployment path through migration `055`; production smoke verifies Milestones 20, 21, and 25; the roadmap reflects the actual merged feature sequence; and the full security/test/type/build gate passes without changing CRM, outreach, pipeline, task, prospect, target, snapshot, annotation, or Shopify business state.
