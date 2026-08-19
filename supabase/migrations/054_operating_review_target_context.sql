@@ -52,4 +52,4 @@ $$;
 
 revoke all on function public.record_sales_operating_review_snapshot(uuid,text,date,date,date,date,date,jsonb,text,jsonb,text) from public,anon,authenticated;
 grant execute on function public.record_sales_operating_review_snapshot(uuid,text,date,date,date,date,date,jsonb,text,jsonb,text) to service_role;
-revoke all on function public.record_sales_operating_review_snapshot(uuid,text,date,date,date,date,date,jsonb,text) from public,anon,authenticated;
+revoke all on function public.record_sales_operating_review_snapshot(uuid,text,date,date,date,date,date,jsonb,text) from public,anon,authenticated,service_role;
