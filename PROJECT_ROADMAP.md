@@ -284,7 +284,7 @@ Sales users can export immutable review snapshots, target payloads/hashes, and a
 
 ## Milestone 34 — Schema, deployment, and roadmap alignment
 
-**Status: implementation in progress.**
+**Status: implementation complete on `main`; no new migration required.**
 
 - Extend production smoke verification through migration `055`, including a named Milestone 25 schema check.
 - Keep the smoke path read-only and explicitly prohibit annotation writes during verification.
@@ -292,3 +292,83 @@ Sales users can export immutable review snapshots, target payloads/hashes, and a
 - Align roadmap status with the actual merged implementation through Milestone 33.
 
 **Completion gate:** production operators can follow one current deployment path through migration `055`; production smoke verifies Milestones 20, 21, and 25; the roadmap reflects the actual merged feature sequence; and the full security/test/type/build gate passes without changing CRM, outreach, pipeline, task, prospect, target, snapshot, annotation, or Shopify business state.
+
+## Milestone 35 — Archived operating-review evidence verification
+
+**Status: implementation complete on `main`; no new migration required.**
+
+Authenticated sales users can verify archived Milestone 33 evidence packages by recomputing deterministic SHA-256 integrity, validating manifest counts and format version, enforcing a bounded upload size, and persisting nothing.
+
+## Milestone 36 — Read-only evidence current-state cross-check
+
+**Status: implementation complete on `main`; no new migration required.**
+
+Integrity-verified archived evidence can be compared read-only with current snapshot and annotation evidence, reporting missing or mismatched records without restore, overwrite, RPC, or mutation authority.
+
+## Milestone 37 — Evidence mismatch diagnostics
+
+**Status: implementation complete on `main`; no new migration required.**
+
+Current-state cross-checks report exact differing snapshot and annotation fields while preserving record-level missing/mismatched diagnostics and remaining read-only.
+
+## Milestone 38 — Evidence reconciliation report export
+
+**Status: implementation complete on `main`; no new migration required.**
+
+After evidence verification and current-state comparison, sales users can export a deterministic no-store reconciliation JSON report bound to the archived package evidence hash, with no restore or persistence path.
+
+## Milestone 39 — Archived reconciliation report verification
+
+**Status: implementation complete on `main`; no new migration required.**
+
+Saved reconciliation reports can be independently verified by recomputing their deterministic reconciliation hash through an authenticated, database-free, bounded verification path.
+
+## Milestone 40 — Audit-bound evidence package v2
+
+**Status: implementation complete on `main`; no new migration required.**
+
+New operating-review evidence packages bind matching snapshot-recorded and annotation-added audit events into format v2 and its deterministic evidence hash while historical v1 packages remain integrity-verifiable.
+
+## Milestone 41 — Audit current-state cross-check
+
+**Status: implementation complete on `main`; no new migration required.**
+
+Evidence reconciliation extends to bound audit rows, reporting missing audit events and exact changed audit fields while preserving historical v1 compatibility and read-only behavior.
+
+## Milestone 42 — Authenticated evidence package v3
+
+**Status: implementation complete on `main`; production use requires a server-only signing secret/key ID and live validation.**
+
+New evidence exports use format v3 and authenticate the deterministic evidence hash with HMAC-SHA256. Verification, current-state cross-check, and reconciliation validate origin signatures before trusting a v3 package; v1/v2 remain explicitly legacy and unauthenticated.
+
+## Milestone 43 — Evidence signing-key rotation readiness
+
+**Status: implementation complete on `main`; no new migration required.**
+
+Production rotation requires unique non-reused key IDs, retained prior secret material for the evidence-retention period, post-rotation validation, no silent historical re-signing, and an explicit compromised-key procedure.
+
+## Milestone 44 — Evidence signing-key registry
+
+**Status: implementation complete on `main`; no new migration required.**
+
+Operators maintain a non-secret lifecycle registry for active, retired, and compromised evidence-signing key IDs, while cryptographic verification remains the only origin-authentication authority.
+
+## Milestone 45 — Retained-key evidence verification
+
+**Status: implementation complete on `main`; no new migration required.**
+
+New v3 exports remain locked to the single active signing key while verification, cross-check, and reconciliation can select the package's exact retained historical key ID from server-only retained key material. Malformed, duplicate, unknown, weak, or incorrect key configuration fails closed.
+
+## Milestone 46 — Compromised signing-key enforcement
+
+**Status: implementation complete on `main`; no new migration required.**
+
+The active signing key cannot be marked compromised, and a correctly signed historical v3 package from a compromised retained key is explicitly denied origin authentication across verification, cross-check, and reconciliation. Evidence bytes and deterministic hashes remain immutable.
+
+## Milestone 47 — Roadmap ledger alignment guard
+
+**Status: implementation complete on `main`; no new migration required.**
+
+The roadmap is reconciled against the actual merged PR sequence from Milestones 34 through 46, closes the stale Milestone 34 `in progress` status, and adds regression coverage requiring the post-34 milestone ledger to remain present and complete.
+
+**Completion gate:** the repository roadmap records the actual merged implementation sequence through Milestone 47; Milestone 34 no longer appears active; regression tests detect a missing post-34 milestone entry or stale Milestone 34 status; and the full security/test/type/build gate passes without adding business-state mutation authority.
