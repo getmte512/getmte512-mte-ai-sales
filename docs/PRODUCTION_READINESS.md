@@ -15,6 +15,20 @@ The current application must pass the repository verification gate before releas
 
 The current schema baseline is migrations `001` through `055`. No post-055 migration is required by Milestones 26–51.
 
+## Read-only live closure runner
+
+After an administrator signs into the deployed application, the live closure status can be aggregated without recording or mutating evidence:
+
+```bash
+MTE_PRODUCTION_URL=https://your-production-host.example \
+MTE_PRODUCTION_COOKIE='your authenticated admin Cookie header value' \
+npm run closure:production
+```
+
+`NEXT_PUBLIC_APP_URL` may be used instead of `MTE_PRODUCTION_URL`. The runner performs authenticated `GET` requests only to `/api/health`, `/api/smoke-test`, and `/api/launch-readiness`; it never calls a `POST` endpoint, never records a smoke run or launch verification, never persists the cookie, and never prints the cookie. A nonzero exit status means a required production gate is blocked or one of the live checks could not be read.
+
+The runner does not replace any ceremony below. Missing invitation, approval-flow, backup/recovery, signing-key, provider, or launch-signoff evidence must still be completed through the real production workflows.
+
 ## Live production gates
 
 Production launch is complete only after the deployed environment supplies fresh evidence for every required item below. Repository tests cannot substitute for these checks.
