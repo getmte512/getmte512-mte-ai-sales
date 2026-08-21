@@ -13,6 +13,7 @@
     "test": "vitest run",
     "preflight:local": "node scripts/deployment-preflight.mjs",
     "preflight:production": "node scripts/deployment-preflight.mjs --production",
+    "config:production": "node scripts/deployment-config-report.mjs --production",
     "closure:production": "node scripts/production-closure.mjs",
     "security:scan": "node scripts/scan-tracked-secrets.mjs",
     "security:audit": "npm audit --omit=dev --audit-level=high"
@@ -23,7 +24,7 @@
     "csv-parse": "^5.6.0",
     "next": "16.3.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react-dom": "^19.0.4",
     "zod": "^3.24.2"
   },
   "devDependencies": {
