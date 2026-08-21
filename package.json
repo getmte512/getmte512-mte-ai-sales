@@ -13,6 +13,7 @@
     "test": "vitest run",
     "preflight:local": "node scripts/deployment-preflight.mjs",
     "preflight:production": "node scripts/deployment-preflight.mjs --production",
+    "config:production": "node scripts/deployment-config-report.mjs --production",
     "closure:production": "node scripts/production-closure.mjs",
     "security:scan": "node scripts/scan-tracked-secrets.mjs",
     "security:audit": "npm audit --omit=dev --audit-level=high"
