@@ -7,6 +7,7 @@ This document is the final engineering closure matrix. It separates repository-c
 The current application must pass the repository verification gate before release:
 
 - `npm run preflight:production`
+- `npm run config:production`
 - `npm run security:scan`
 - `npm run security:audit`
 - `npm test`
@@ -26,6 +27,8 @@ npm run closure:production
 ```
 
 `NEXT_PUBLIC_APP_URL` may be used instead of `MTE_PRODUCTION_URL`. The runner performs authenticated `GET` requests only to `/api/health`, `/api/smoke-test`, and `/api/launch-readiness`; it never calls a `POST` endpoint, never records a smoke run or launch verification, never persists the cookie, and never prints the cookie. A nonzero exit status means a required production gate is blocked or one of the live checks could not be read.
+
+The same read-only check can be run from GitHub Actions with the manually dispatched `Production Closure` workflow. Configure repository secrets `PRODUCTION_APP_URL` and `PRODUCTION_ADMIN_COOKIE`, then dispatch `.github/workflows/production-closure.yml`. The workflow validates a non-local HTTPS target and passes those values only as runtime environment variables; it does not print them or create launch evidence.
 
 The runner does not replace any ceremony below. Missing invitation, approval-flow, backup/recovery, signing-key, provider, or launch-signoff evidence must still be completed through the real production workflows.
 
