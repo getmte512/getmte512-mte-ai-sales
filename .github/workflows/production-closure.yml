@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      NEXT_PUBLIC_APP_URL: ${{ secrets.PRODUCTION_APP_URL }}
-      PRODUCTION_ADMIN_COOKIE: ${{ secrets.PRODUCTION_ADMIN_COOKIE }}
+      MTE_PRODUCTION_URL: ${{ secrets.PRODUCTION_APP_URL }}
+      MTE_PRODUCTION_COOKIE: ${{ secrets.PRODUCTION_ADMIN_COOKIE }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,11 +22,8 @@ jobs:
       - run: npm ci
       - name: Validate production target
         run: |
-          test -n "$NEXT_PUBLIC_APP_URL"
-          test -n "$PRODUCTION_ADMIN_COOKIE"
-          node -e 'const u=new URL(process.env.NEXT_PUBLIC_APP_URL); if(u.protocol!=="https:"||u.hostname==="localhost") process.exit(1)'
+          test -n "$MTE_PRODUCTION_URL"
+          test -n "$MTE_PRODUCTION_COOKIE"
+          node -e 'const u=new URL(process.env.MTE_PRODUCTION_URL); if(u.protocol!=="https:"||u.hostname==="localhost"||u.hostname==="127.0.0.1") process.exit(1)'
       - name: Run read-only production closure
-        env:
-          PRODUCTION_APP_URL: ${{ secrets.PRODUCTION_APP_URL }}
-          PRODUCTION_ADMIN_COOKIE: ${{ secrets.PRODUCTION_ADMIN_COOKIE }}
         run: npm run closure:production
