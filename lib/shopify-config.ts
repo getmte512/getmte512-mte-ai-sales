@@ -14,8 +14,12 @@ type ShopifyTokenResponse = {
 
 let cachedClientCredentialsToken: { shop: string; token: string; expiresAt: number } | null = null;
 
+export function getConfiguredShopifyDomain(env: Record<string, string | undefined> = process.env) {
+  return env.SHOPIFY_SHOP_DOMAIN?.trim() || env.SHOPIFY_STORE_DOMAIN?.trim() || "";
+}
+
 export function getShopifyReadiness(env: Record<string, string | undefined>): ShopifyReadiness {
-  const shopConfigured = Boolean(env.SHOPIFY_SHOP_DOMAIN?.trim());
+  const shopConfigured = Boolean(getConfiguredShopifyDomain(env));
   const tokenConfigured = Boolean(env.SHOPIFY_ADMIN_ACCESS_TOKEN?.trim());
   const clientCredentialsConfigured = Boolean(env.SHOPIFY_CLIENT_ID?.trim() && env.SHOPIFY_CLIENT_SECRET?.trim());
   return {
@@ -29,7 +33,7 @@ export function getShopifyReadiness(env: Record<string, string | undefined>): Sh
 }
 
 export function normalizeShopifyShopDomain(shop: string) {
-  const normalized = shop.trim().toLowerCase();
+  const normalized = shop.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/$/, "");
   if (!/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(normalized)) throw new Error("The Shopify shop domain is invalid.");
   return normalized;
 }
@@ -44,7 +48,7 @@ export async function getShopifyAdminAccessToken(env: Record<string, string | un
   const staticToken = env.SHOPIFY_ADMIN_ACCESS_TOKEN?.trim();
   if (staticToken) return staticToken;
 
-  const shop = normalizeShopifyShopDomain(env.SHOPIFY_SHOP_DOMAIN || "");
+  const shop = normalizeShopifyShopDomain(getConfiguredShopifyDomain(env));
   const clientId = env.SHOPIFY_CLIENT_ID?.trim();
   const clientSecret = env.SHOPIFY_CLIENT_SECRET?.trim();
   if (!clientId || !clientSecret) throw new Error("SHOPIFY_NOT_CONFIGURED");
