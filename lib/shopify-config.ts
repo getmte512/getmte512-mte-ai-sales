@@ -14,12 +14,31 @@ type ShopifyTokenResponse = {
 
 let cachedClientCredentialsToken: { shop: string; token: string; expiresAt: number } | null = null;
 
+export function normalizeShopifyShopDomain(shop: string) {
+  const normalized = shop.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/$/, "");
+  if (!/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(normalized)) throw new Error("The Shopify shop domain is invalid.");
+  return normalized;
+}
+
 export function getConfiguredShopifyDomain(env: Record<string, string | undefined> = process.env) {
-  return env.SHOPIFY_SHOP_DOMAIN?.trim() || env.SHOPIFY_STORE_DOMAIN?.trim() || "";
+  const candidates = [env.SHOPIFY_SHOP_DOMAIN, env.SHOPIFY_STORE_DOMAIN].filter((value): value is string => Boolean(value?.trim()));
+  for (const candidate of candidates) {
+    try {
+      return normalizeShopifyShopDomain(candidate);
+    } catch {
+      // Try the next configured domain. This lets production recover from a stale placeholder variable.
+    }
+  }
+  return candidates[0]?.trim() || "";
 }
 
 export function getShopifyReadiness(env: Record<string, string | undefined>): ShopifyReadiness {
-  const shopConfigured = Boolean(getConfiguredShopifyDomain(env));
+  let shopConfigured = false;
+  try {
+    shopConfigured = Boolean(getConfiguredShopifyDomain(env) && normalizeShopifyShopDomain(getConfiguredShopifyDomain(env)));
+  } catch {
+    shopConfigured = false;
+  }
   const tokenConfigured = Boolean(env.SHOPIFY_ADMIN_ACCESS_TOKEN?.trim());
   const clientCredentialsConfigured = Boolean(env.SHOPIFY_CLIENT_ID?.trim() && env.SHOPIFY_CLIENT_SECRET?.trim());
   return {
@@ -30,12 +49,6 @@ export function getShopifyReadiness(env: Record<string, string | undefined>): Sh
     apiVersion: env.SHOPIFY_API_VERSION?.trim() || "2026-01",
     requiredScopes: ["read_customers", "read_orders", "read_products", "read_inventory"],
   };
-}
-
-export function normalizeShopifyShopDomain(shop: string) {
-  const normalized = shop.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/$/, "");
-  if (!/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(normalized)) throw new Error("The Shopify shop domain is invalid.");
-  return normalized;
 }
 
 export function getShopifyAdminEndpoint(shop: string, apiVersion: string) {
