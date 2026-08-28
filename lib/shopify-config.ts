@@ -3,6 +3,12 @@ export type ShopifyReadiness = {
   shopConfigured: boolean;
   tokenConfigured: boolean;
   clientCredentialsConfigured: boolean;
+  clientIdConfigured: boolean;
+  clientSecretConfigured: boolean;
+  domainSource: "SHOPIFY_SHOP_DOMAIN" | "SHOPIFY_STORE_DOMAIN" | null;
+  domainValid: boolean;
+  authMode: "client_credentials" | "static_token" | "partial" | "none";
+  missing: string[];
   apiVersion: string;
   requiredScopes: string[];
 };
@@ -10,6 +16,12 @@ export type ShopifyReadiness = {
 type ShopifyTokenResponse = {
   access_token?: string;
   expires_in?: number;
+};
+
+type ShopifyDomainResolution = {
+  domain: string;
+  source: "SHOPIFY_SHOP_DOMAIN" | "SHOPIFY_STORE_DOMAIN" | null;
+  valid: boolean;
 };
 
 let cachedClientCredentialsToken: { shop: string; token: string; expiresAt: number } | null = null;
@@ -20,32 +32,65 @@ export function normalizeShopifyShopDomain(shop: string) {
   return normalized;
 }
 
-export function getConfiguredShopifyDomain(env: Record<string, string | undefined> = process.env) {
-  const candidates = [env.SHOPIFY_SHOP_DOMAIN, env.SHOPIFY_STORE_DOMAIN].filter((value): value is string => Boolean(value?.trim()));
-  for (const candidate of candidates) {
+export function resolveConfiguredShopifyDomain(env: Record<string, string | undefined> = process.env): ShopifyDomainResolution {
+  const candidates: Array<["SHOPIFY_SHOP_DOMAIN" | "SHOPIFY_STORE_DOMAIN", string | undefined]> = [
+    ["SHOPIFY_SHOP_DOMAIN", env.SHOPIFY_SHOP_DOMAIN],
+    ["SHOPIFY_STORE_DOMAIN", env.SHOPIFY_STORE_DOMAIN],
+  ];
+
+  for (const [source, value] of candidates) {
+    if (!value?.trim()) continue;
     try {
-      return normalizeShopifyShopDomain(candidate);
+      return { domain: normalizeShopifyShopDomain(value), source, valid: true };
     } catch {
-      // Try the next configured domain. This lets production recover from a stale placeholder variable.
+      // Keep searching so a stale placeholder cannot mask a valid fallback variable.
     }
   }
-  return candidates[0]?.trim() || "";
+
+  const firstConfigured = candidates.find(([, value]) => Boolean(value?.trim()));
+  return {
+    domain: firstConfigured?.[1]?.trim() || "",
+    source: firstConfigured?.[0] || null,
+    valid: false,
+  };
+}
+
+export function getConfiguredShopifyDomain(env: Record<string, string | undefined> = process.env) {
+  return resolveConfiguredShopifyDomain(env).domain;
 }
 
 export function getShopifyReadiness(env: Record<string, string | undefined>): ShopifyReadiness {
-  let shopConfigured = false;
-  try {
-    shopConfigured = Boolean(getConfiguredShopifyDomain(env) && normalizeShopifyShopDomain(getConfiguredShopifyDomain(env)));
-  } catch {
-    shopConfigured = false;
-  }
+  const domain = resolveConfiguredShopifyDomain(env);
   const tokenConfigured = Boolean(env.SHOPIFY_ADMIN_ACCESS_TOKEN?.trim());
-  const clientCredentialsConfigured = Boolean(env.SHOPIFY_CLIENT_ID?.trim() && env.SHOPIFY_CLIENT_SECRET?.trim());
+  const clientIdConfigured = Boolean(env.SHOPIFY_CLIENT_ID?.trim());
+  const clientSecretConfigured = Boolean(env.SHOPIFY_CLIENT_SECRET?.trim());
+  const clientCredentialsConfigured = clientIdConfigured && clientSecretConfigured;
+  const anyClientCredential = clientIdConfigured || clientSecretConfigured;
+  const authMode = tokenConfigured
+    ? "static_token"
+    : clientCredentialsConfigured
+      ? "client_credentials"
+      : anyClientCredential
+        ? "partial"
+        : "none";
+  const missing: string[] = [];
+  if (!domain.valid) missing.push("SHOPIFY_SHOP_DOMAIN");
+  if (!tokenConfigured && !clientCredentialsConfigured) {
+    if (!clientIdConfigured) missing.push("SHOPIFY_CLIENT_ID");
+    if (!clientSecretConfigured) missing.push("SHOPIFY_CLIENT_SECRET");
+  }
+
   return {
-    configured: shopConfigured && (tokenConfigured || clientCredentialsConfigured),
-    shopConfigured,
+    configured: domain.valid && (tokenConfigured || clientCredentialsConfigured),
+    shopConfigured: domain.valid,
     tokenConfigured,
     clientCredentialsConfigured,
+    clientIdConfigured,
+    clientSecretConfigured,
+    domainSource: domain.source,
+    domainValid: domain.valid,
+    authMode,
+    missing,
     apiVersion: env.SHOPIFY_API_VERSION?.trim() || "2026-01",
     requiredScopes: ["read_customers", "read_orders", "read_products", "read_inventory"],
   };
