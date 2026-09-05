@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { safeAuthDestination } from "@/lib/account-setup";
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const tokenHash = url.searchParams.get("token_hash");
@@ -16,14 +17,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=Authentication%20is%20not%20configured.", url.origin));
   }
 
-  let response = NextResponse.redirect(new URL(destination, url.origin));
+  const cookieStore = await cookies();
+  const response = NextResponse.redirect(new URL(destination, url.origin));
   const supabase = createServerClient(supabaseUrl, anonKey, {
     cookies: {
-      getAll: () => request.cookies.getAll(),
-      setAll: (items) => {
-        items.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.redirect(new URL(destination, url.origin));
-        items.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          response.cookies.set(name, value, options);
+        });
       },
     },
   });
@@ -40,5 +44,6 @@ export async function GET(request: NextRequest) {
   if (error) {
     return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(error.message)}`, url.origin));
   }
+
   return response;
 }
