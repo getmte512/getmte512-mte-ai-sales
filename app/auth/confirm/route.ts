@@ -1,10 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
 import { safeAuthDestination } from "@/lib/account-setup";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const tokenHash = url.searchParams.get("token_hash");
@@ -17,14 +16,11 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL("/login?error=Authentication%20is%20not%20configured.", url.origin));
   }
 
-  const cookieStore = await cookies();
   const response = NextResponse.redirect(new URL(destination, url.origin));
   const supabase = createServerClient(supabaseUrl, anonKey, {
     cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet) {
+      getAll: () => request.cookies.getAll(),
+      setAll: (cookiesToSet) => {
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
         });
