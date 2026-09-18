@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { CookieOptions } from "@supabase/ssr";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
 import { safeAuthDestination } from "@/lib/account-setup";
+
+type CookieToSet = {
+  name: string;
+  value: string;
+  options: CookieOptions;
+};
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
@@ -20,7 +27,7 @@ export async function GET(request: NextRequest) {
   const supabase = createServerClient(supabaseUrl, anonKey, {
     cookies: {
       getAll: () => request.cookies.getAll(),
-      setAll: (cookiesToSet) => {
+      setAll: (cookiesToSet: CookieToSet[]) => {
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
         });
